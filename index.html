@@ -3,64 +3,233 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#111827" />
+  <meta name="theme-color" content="#07110f" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="CLP ⇄ BRL" />
+  <meta name="apple-mobile-web-app-title" content="Conta Chile" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="stylesheet" href="style.css" />
-  <title>Conversor CLP ⇄ BRL</title>
+  <title>Conta Chile · Conversor CLP ⇄ BRL</title>
 </head>
 <body>
-  <main class="app">
-    <section class="card">
-      <div class="topbar">
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="hero">
+    <div class="brand-row">
+      <div class="brand-mark" aria-hidden="true">
+        <span>CLP</span>
+        <i>↗</i>
+        <span>BRL</span>
+      </div>
+      <div class="rate-chip" title="Cotação usada neste momento">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span id="heroRateText">Carregando cotação…</span>
+      </div>
+    </div>
+
+    <span class="eyebrow">CONTA DE VIAGEM · CHILE</span>
+    <h1>Converta. Some. Divida.</h1>
+    <p>Organize os gastos da viagem e feche a conta sem complicação.</p>
+  </header>
+
+  <main class="app-shell">
+    <section class="surface converter-card" aria-labelledby="converterTitle">
+      <div class="section-heading">
         <div>
-          <span class="eyebrow">CONVERSOR DE VIAGEM</span>
-          <h1>Peso chileno ⇄ Real</h1>
+          <span class="step-label">01 · CONVERTER</span>
+          <h2 id="converterTitle">Quanto fica?</h2>
         </div>
-        <button id="swapButton" class="icon-button" aria-label="Inverter moedas">⇄</button>
+        <button id="swapButton" class="swap-button" type="button" aria-label="Inverter moedas">
+          <span aria-hidden="true">⇄</span>
+        </button>
       </div>
 
-      <label for="amount" id="amountLabel">Valor em pesos chilenos</label>
-      <div class="amount-wrap">
-        <span id="inputSymbol">$</span>
-        <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="8.500" />
-      </div>
+      <form id="conversionForm" novalidate>
+        <label for="amount" id="amountLabel">Valor em pesos chilenos</label>
+        <div class="amount-wrap">
+          <span id="inputSymbol">$</span>
+          <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="8.500" aria-describedby="amountHelp" />
+          <span id="inputCode" class="currency-code">CLP</span>
+        </div>
+        <span id="amountHelp" class="sr-only">Digite o valor que deseja converter.</span>
 
-      <div class="result-box">
-        <span id="resultLabel">Resultado em reais</span>
-        <strong id="result">R$ 0,00</strong>
-      </div>
+        <div class="result-box" aria-live="polite">
+          <div>
+            <span id="resultLabel">Resultado em reais</span>
+            <strong id="result">R$ 0,00</strong>
+          </div>
+          <span class="result-symbol" aria-hidden="true">≈</span>
+        </div>
 
-      <div class="rate-row">
-        <div>
-          <span>Cotação usada</span>
+        <div class="item-field">
+          <label for="itemLabel">O que foi? <span>Opcional</span></label>
+          <input id="itemLabel" type="text" maxlength="60" autocomplete="off" placeholder="Ex.: jantar, metrô, passeio…" />
+        </div>
+
+        <button id="addItemButton" class="add-button" type="submit" disabled>
+          <span class="button-plus" aria-hidden="true">＋</span>
+          <span>Adicionar ao resumo</span>
+        </button>
+      </form>
+
+      <div class="rate-panel">
+        <div class="rate-copy">
+          <span>Cotação usada agora</span>
           <strong id="rateText">1 CLP = R$ 0,00555</strong>
         </div>
-        <button id="refreshButton" class="secondary">Atualizar</button>
+        <button id="refreshButton" class="refresh-button" type="button">
+          <span class="refresh-icon" aria-hidden="true">↻</span>
+          <span>Atualizar</span>
+        </button>
       </div>
 
-      <p id="status" class="status">A cotação será atualizada ao abrir e a cada minuto enquanto o app estiver em uso.</p>
+      <p id="status" class="status" aria-live="polite">Buscando a cotação mais recente…</p>
 
-      <details>
+      <details class="rate-settings">
         <summary>Ajustar cotação manualmente</summary>
         <div class="manual-grid">
           <label for="manualRate">1 CLP vale quantos BRL?</label>
-          <input id="manualRate" type="number" inputmode="decimal" step="0.0000001" value="0.00555" />
-          <button id="saveRateButton" class="primary">Salvar cotação</button>
+          <input id="manualRate" type="number" inputmode="decimal" step="0.0000001" min="0" value="0.00555" />
+          <button id="saveRateButton" class="secondary-button" type="button">Salvar cotação manual</button>
         </div>
       </details>
     </section>
+
+    <section id="summaryCard" class="surface summary-card" aria-labelledby="summaryTitle">
+      <div class="section-heading summary-heading">
+        <div>
+          <span class="step-label">02 · SOMAR E DIVIDIR</span>
+          <div class="title-with-count">
+            <h2 id="summaryTitle">Resumo da conta</h2>
+            <span id="entryCount" class="count-badge">0</span>
+          </div>
+        </div>
+        <button id="clearSummaryButton" class="text-button" type="button" disabled>Limpar</button>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-illustration" aria-hidden="true">
+          <span></span><span></span><span></span>
+          <i>＋</i>
+        </div>
+        <strong>Seu resumo está vazio</strong>
+        <p>Converta um valor e toque em “Adicionar ao resumo”.</p>
+      </div>
+
+      <div id="summaryContent" class="summary-content" hidden>
+        <ul id="itemsList" class="items-list" aria-label="Itens adicionados à conta"></ul>
+
+        <p class="rate-lock-note">
+          <span aria-hidden="true">◆</span>
+          Cada item guarda a cotação usada no momento em que foi adicionado.
+        </p>
+
+        <div class="totals-card" aria-live="polite">
+          <span>Total da conta</span>
+          <div class="total-primary">
+            <strong id="totalBrl">R$ 0,00</strong>
+            <small id="totalClp">$ 0 CLP</small>
+          </div>
+        </div>
+
+        <div class="split-card">
+          <div class="split-heading">
+            <div>
+              <span>Dividir entre</span>
+              <strong>Pessoas na conta</strong>
+            </div>
+            <div class="people-stepper" role="group" aria-label="Quantidade de pessoas">
+              <button id="decreasePeopleButton" type="button" aria-label="Diminuir pessoas">−</button>
+              <input id="peopleCount" type="number" inputmode="numeric" min="1" max="99" value="1" aria-label="Número de pessoas" />
+              <button id="increasePeopleButton" type="button" aria-label="Aumentar pessoas">＋</button>
+            </div>
+          </div>
+
+          <div class="per-person-result">
+            <span>Por pessoa</span>
+            <strong id="perPersonBrl">R$ 0,00</strong>
+            <small id="perPersonClp">$ 0 CLP</small>
+          </div>
+          <p id="splitNote" class="split-note"></p>
+        </div>
+
+        <button id="closeAccountButton" class="close-account-button" type="button">
+          <span>Fechar a conta</span>
+          <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </section>
   </main>
+
+  <button id="mobileSummaryButton" class="mobile-summary-bar" type="button" hidden>
+    <span><strong id="mobileItemCount">0 itens</strong><small>Ver resumo</small></span>
+    <strong id="mobileTotalBrl">R$ 0,00</strong>
+  </button>
 
   <footer class="site-footer">
     <p>Desenvolvido por <a href="https://abcensina.com.br" target="_blank" rel="noopener noreferrer">abc Ensina</a></p>
     <p>&copy; 2026 abc Ensina. Todos os direitos reservados.</p>
-    <p class="rate-credits">Cotações por <a href="https://docs.awesomeapi.com.br/api-de-moedas" target="_blank" rel="noopener noreferrer">AwesomeAPI</a> e <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">ExchangeRate-API</a>.</p>
   </footer>
 
-  <script src="app.js"></script>
+  <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <div class="confirm-sheet">
+      <div class="confirm-icon" aria-hidden="true">!</div>
+      <span class="step-label">CONFIRMAR AÇÃO</span>
+      <h2 id="confirmTitle">Limpar o resumo?</h2>
+      <p id="confirmMessage">Os itens adicionados serão removidos desta conta.</p>
+      <div class="confirm-actions">
+        <button id="cancelConfirmButton" class="cancel-button" type="button">Manter conta</button>
+        <button id="acceptConfirmButton" class="danger-button" type="button">Sim, limpar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="receiptDialog" class="receipt-dialog" aria-labelledby="receiptTitle">
+    <div class="receipt-sheet">
+      <form method="dialog" class="dialog-close-form">
+        <button class="dialog-close" type="submit" aria-label="Fechar recibo">×</button>
+      </form>
+
+      <div class="receipt-success" aria-hidden="true">✓</div>
+      <span class="step-label">CONTA FECHADA</span>
+      <h2 id="receiptTitle">Pronto para dividir.</h2>
+      <p id="receiptSubtitle">Resumo da conta de viagem</p>
+
+      <div class="receipt-total">
+        <span>Total</span>
+        <strong id="receiptTotalBrl">R$ 0,00</strong>
+        <small id="receiptTotalClp">$ 0 CLP</small>
+      </div>
+
+      <div class="receipt-division">
+        <div>
+          <span>Pessoas</span>
+          <strong id="receiptPeople">1</strong>
+        </div>
+        <div>
+          <span>Por pessoa</span>
+          <strong id="receiptPerPersonBrl">R$ 0,00</strong>
+          <small id="receiptPerPersonClp">$ 0 CLP</small>
+        </div>
+      </div>
+
+      <p id="receiptSplitNote" class="receipt-note"></p>
+
+      <div class="receipt-actions">
+        <button id="shareReceiptButton" class="share-button" type="button">
+          <span aria-hidden="true">↗</span>
+          Compartilhar resumo
+        </button>
+        <button id="editAccountButton" class="secondary-button" type="button">Continuar editando</button>
+        <button id="newAccountButton" class="new-account-button" type="button">Começar uma nova conta</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>

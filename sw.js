@@ -1,6 +1,19 @@
 
-const CACHE = "clp-brl-v8";
-const ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
+const CACHE_PREFIX = "clp-brl-";
+const CACHE = `${CACHE_PREFIX}v14`;
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./style.css",
+  "./app.js",
+  "./js/money.js",
+  "./js/rates.js",
+  "./js/session-store.js",
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon-180.png"
+];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
@@ -10,7 +23,11 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(keys => Promise.all(
+        keys
+          .filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE)
+          .map(key => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });

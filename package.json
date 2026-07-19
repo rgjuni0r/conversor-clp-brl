@@ -1,0 +1,13 @@
+{
+  "name": "conversor-clp-brl",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PWA para conversão CLP/BRL, resumo de gastos e divisão de conta.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

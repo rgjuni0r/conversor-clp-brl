@@ -1,11 +1,11 @@
 {
-  "name": "Conversor Peso Chileno e Real",
-  "short_name": "CLP ⇄ BRL",
+  "name": "Conta Chile — Conversor e divisão de gastos",
+  "short_name": "Conta Chile",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0b1020",
-  "theme_color": "#111827",
-  "description": "Conversor simples entre peso chileno e real brasileiro.",
+  "background_color": "#07110f",
+  "theme_color": "#07110f",
+  "description": "Converta CLP e BRL, organize gastos e divida a conta da viagem.",
   "icons": [
     {
       "src": "icon-192.png",
