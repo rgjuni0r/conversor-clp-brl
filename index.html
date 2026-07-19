@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CLP ⇄ BRL" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Conversor CLP ⇄ BRL</title>
+</head>
+<body>
+  <main class="app">
+    <section class="card">
+      <div class="topbar">
+        <div>
+          <span class="eyebrow">CONVERSOR DE VIAGEM</span>
+          <h1>Peso chileno ⇄ Real</h1>
+        </div>
+        <button id="swapButton" class="icon-button" aria-label="Inverter moedas">⇄</button>
+      </div>
+
+      <label for="amount" id="amountLabel">Valor em pesos chilenos</label>
+      <div class="amount-wrap">
+        <span id="inputSymbol">$</span>
+        <input id="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="8.500" />
+      </div>
+
+      <div class="result-box">
+        <span id="resultLabel">Resultado em reais</span>
+        <strong id="result">R$ 0,00</strong>
+      </div>
+
+      <div class="rate-row">
+        <div>
+          <span>Cotação usada</span>
+          <strong id="rateText">1 CLP = R$ 0,00555</strong>
+        </div>
+        <button id="refreshButton" class="secondary">Atualizar</button>
+      </div>
+
+      <p id="status" class="status">A cotação será atualizada ao abrir e a cada minuto enquanto o app estiver em uso.</p>
+
+      <details>
+        <summary>Ajustar cotação manualmente</summary>
+        <div class="manual-grid">
+          <label for="manualRate">1 CLP vale quantos BRL?</label>
+          <input id="manualRate" type="number" inputmode="decimal" step="0.0000001" value="0.00555" />
+          <button id="saveRateButton" class="primary">Salvar cotação</button>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Desenvolvido por <a href="https://abcensina.com.br" target="_blank" rel="noopener noreferrer">abc Ensina</a></p>
+    <p>&copy; 2026 abc Ensina. Todos os direitos reservados.</p>
+    <p class="rate-credits">Cotações por <a href="https://docs.awesomeapi.com.br/api-de-moedas" target="_blank" rel="noopener noreferrer">AwesomeAPI</a> e <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">ExchangeRate-API</a>.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
