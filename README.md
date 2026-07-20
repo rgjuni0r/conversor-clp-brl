@@ -66,7 +66,7 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Instalação como PWA no iPhone, Android e navegadores compatíveis.
 - Layout responsivo com suporte às áreas seguras do iPhone.
 - Identidade visual inspirada na Cordilheira dos Andes, com neve animada em profundidade e movimento acessível.
-- Efeito de globo de neve no mobile com tremor visual progressivo e explosão sincronizada.
+- Efeito de globo de neve no mobile com turbulência contínua, trajetórias aleatórias, tremor progressivo e explosão sincronizada.
 - Pulsos táteis crescentes e vibração de impacto em navegadores móveis compatíveis.
 - Retomada automática do sensor após a primeira autorização, sem solicitações repetidas pelo app.
 - Resumo em accordion na versão mobile, preservando a visualização completa no desktop.
@@ -106,7 +106,7 @@ flowchart TD
 | `js/location.js` | Validação das coordenadas atuais e conversão client-side para um nome de localidade. |
 | `js/rates.js` | Consulta cambial, timeout, validação da resposta e espelho de contingência. |
 | `js/session-store.js` | Modelo versionado, validação e persistência da conta. |
-| `js/snow-motion.js` | Detecção de shake, progressão por impulsos distintos, rearme, cooldown e padrões táteis. |
+| `js/snow-motion.js` | Detecção de shake, inversão direcional, turbulência aleatória, progressão, cooldown e padrões táteis. |
 | `sw.js` | Cache dos arquivos locais e funcionamento offline do shell. |
 | `manifest.json` | Nome, ícones, cores e comportamento de instalação do PWA. |
 | `tests/` | Testes automatizados de moeda, sessão, divisão, fontes cambiais e movimento. |
@@ -259,7 +259,7 @@ A suíte cobre:
 - criação, persistência e recuperação de sessões;
 - descarte seguro de dados corrompidos;
 - validação da cotação diária e fallback entre os dois espelhos.
-- detecção de shake moderado, progressão, rearme, intervalo mínimo, cooldown e fallback amplificado com gravidade;
+- detecção de shake moderado, inversões contínuas, turbulência visual aleatória, progressão, rearme, intervalo mínimo, cooldown e fallback amplificado com gravidade;
 - padrões crescentes de vibração e pulso final do efeito de neve.
 
 ## Instalação como aplicativo
@@ -348,7 +348,7 @@ Ao publicar uma alteração em `index.html`, `style.css`, `app.js`, ícones ou m
 
 ```js
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v35`;
+const CACHE = `${CACHE_PREFIX}v36`;
 ```
 
 Esse versionamento força a remoção do cache anterior durante a ativação do novo Service Worker.

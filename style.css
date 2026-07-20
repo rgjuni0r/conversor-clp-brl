@@ -132,6 +132,8 @@ input { min-width: 0; }
   contain: strict;
   overflow: hidden;
   pointer-events: none;
+  transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  transition: transform 170ms cubic-bezier(.2, .72, .24, 1);
 }
 
 .snow-layer {
@@ -202,6 +204,8 @@ input { min-width: 0; }
   contain: strict;
   overflow: hidden;
   pointer-events: none;
+  transform: translate3d(0, 0, 0) rotate(0) scale(1);
+  transition: transform 125ms cubic-bezier(.2, .72, .24, 1), opacity .16s ease;
 }
 
 .snowflake {
@@ -1555,6 +1559,28 @@ label,
   92% { opacity: .62; }
   100% { opacity: 0; transform: translate3d(var(--snow-drift), 116vh, 0) rotate(140deg); }
 }
+@keyframes snowflake-stir-fall {
+  0% { opacity: 0; transform: translate3d(0, -10vh, 0) rotate(0deg); }
+  6% { opacity: .88; }
+  28% { transform: translate3d(calc(var(--snow-drift) + var(--snow-extra-drift)), 24vh, 0) rotate(70deg); }
+  54% { transform: translate3d(calc(0px - var(--snow-extra-drift)), 60vh, 0) rotate(155deg); }
+  82% { opacity: .78; transform: translate3d(calc(var(--snow-drift) + var(--snow-extra-drift)), 92vh, 0) rotate(245deg); }
+  100% { opacity: 0; transform: translate3d(calc(0px - var(--snow-extra-drift)), 118vh, 0) rotate(330deg); }
+}
+@keyframes snow-globe-live-burst {
+  0% { opacity: .05; transform: translate3d(var(--snow-stir-layer-start), -8vh, 0) rotate(-3deg); }
+  18% { opacity: calc(.22 + var(--snow-stir-intensity) * .66); }
+  48% { transform: translate3d(var(--snow-stir-layer-end), 46vh, 0) rotate(3deg); }
+  72% { opacity: calc(.16 + var(--snow-stir-intensity) * .5); transform: translate3d(var(--snow-stir-layer-start), 84vh, 0) rotate(-2deg); }
+  100% { opacity: 0; transform: translate3d(var(--snow-stir-layer-end), 138vh, 0) rotate(2deg); }
+}
+@keyframes snow-globe-live-swirl {
+  0% { opacity: 0; transform: translate3d(var(--snow-stir-layer-end), -2vh, 0) rotate(4deg); }
+  16% { opacity: calc(.18 + var(--snow-stir-intensity) * .58); }
+  38% { transform: translate3d(var(--snow-stir-layer-start), 38vh, 0) rotate(-5deg); }
+  66% { transform: translate3d(var(--snow-stir-layer-end), 80vh, 0) rotate(4deg); }
+  100% { opacity: 0; transform: translate3d(var(--snow-stir-layer-start), 136vh, 0) rotate(-3deg); }
+}
 @keyframes snow-globe-burst {
   0% { opacity: 0; transform: translate3d(-8vw, -8vh, 0) rotate(-2deg); }
   1% { opacity: .98; }
@@ -1610,6 +1636,50 @@ label,
   body.snow-globe-charge-3 {
     --rumble-distance: 1.7px;
     --rumble-speed: 86ms;
+  }
+
+  body.snow-globe-stirring .snowfall {
+    transform:
+      translate3d(var(--snow-stir-x), var(--snow-stir-y), 0)
+      rotate(var(--snow-stir-rotation))
+      scale(1.08);
+  }
+
+  body.snow-globe-stirring .snowfall-foreground {
+    opacity: 1;
+    transform:
+      translate3d(var(--snow-stir-x), var(--snow-stir-y), 0)
+      rotate(var(--snow-stir-rotation))
+      scale(1.045);
+  }
+
+  body.snow-globe-stirring .snow-layer-burst,
+  body.snow-globe-stirring .snow-layer-swirl { display: block; }
+
+  body.snow-globe-stirring .snow-layer-burst {
+    animation: snow-globe-live-burst var(--snow-stir-duration) linear infinite;
+  }
+
+  body.snow-globe-stirring .snow-layer-swirl {
+    animation: snow-globe-live-swirl calc(var(--snow-stir-duration) * 1.18) linear infinite reverse;
+  }
+
+  body.snow-globe-stirring .snow-layer-far {
+    display: block;
+    opacity: calc(.3 + var(--snow-stir-intensity) * .3);
+    animation-duration: calc(18s * var(--snow-stir-speed-scale));
+  }
+
+  body.snow-globe-stirring .snow-layer-near {
+    opacity: calc(.38 + var(--snow-stir-intensity) * .42);
+    animation-duration: calc(12s * var(--snow-stir-speed-scale));
+  }
+
+  body.snow-globe-stirring .snowflake {
+    display: block;
+    animation-name: snowflake-stir-fall;
+    animation-duration: calc(var(--snow-duration) * var(--snow-stir-speed-scale));
+    filter: brightness(calc(1 + var(--snow-stir-intensity) * .24));
   }
 
   body.snow-globe-charging .hero,

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  createSnowGlobeFrame,
   ShakeDetector,
   getSnowGlobeVibrationPattern
 } from "../js/snow-motion.js";
@@ -135,6 +136,26 @@ test("exige queda da aceleração antes de aceitar outro impulso", () => {
   assert.equal(nextImpulse.stage, 1);
 });
 
+test("rearma com inversões reais de direção durante uma agitação contínua", () => {
+  const detector = new ShakeDetector({
+    threshold: 8,
+    hitsRequired: 4,
+    minHitIntervalMs: 100,
+    directionRearmDot: .2
+  });
+
+  const results = [
+    detector.analyze(motion(9, 0, 0), 100),
+    detector.analyze(motion(-9, 0, 0), 240),
+    detector.analyze(motion(9, 0, 0), 380),
+    detector.analyze(motion(-9, 0, 0), 520)
+  ];
+
+  assert.deepEqual(results.map(result => result.registered), [true, true, true, true]);
+  assert.equal(results.at(-1).triggered, true);
+  assert.deepEqual(detector.getMotionVector(), { x: -9, y: 0, z: 0 });
+});
+
 test("zera a progressão expirada e reinicia no primeiro nível", () => {
   const detector = new ShakeDetector({
     hitsRequired: 4,
@@ -222,6 +243,36 @@ test("não deixa ruído da aceleração linear ocultar o sensor com gravidade", 
   assert.equal(detector.sample(noisyMotion(3.5, 0), 120), false);
   assert.equal(detector.sample(noisyMotion(3.5, 0), 220), false);
   assert.equal(detector.sample(noisyMotion(0, 3.5), 360), true);
+});
+
+test("cria turbulência visual desde o primeiro movimento significativo", () => {
+  const inactive = createSnowGlobeFrame({
+    magnitude: .8,
+    vector: { x: .8, y: 0, z: 0 }
+  }, { random: () => .5 });
+  const active = createSnowGlobeFrame({
+    magnitude: 9,
+    vector: { x: 9, y: 0, z: 0 }
+  }, { random: () => .5 });
+
+  assert.equal(inactive.active, false);
+  assert.equal(active.active, true);
+  assert.ok(active.intensity > 0);
+  assert.ok(active.offsetX > 0);
+  assert.equal(active.offsetY, 0);
+  assert.ok(active.durationMs < inactive.durationMs);
+});
+
+test("varia a trajetória da neve mesmo para impulsos de mesma intensidade", () => {
+  const values = [0, 1, 0, 1, 0, 1];
+  const random = () => values.shift();
+  const motionSample = { magnitude: 10, vector: { x: 4, y: 2, z: 1 } };
+  const first = createSnowGlobeFrame(motionSample, { random });
+  const second = createSnowGlobeFrame(motionSample, { random });
+
+  assert.notEqual(first.offsetX, second.offsetX);
+  assert.notEqual(first.offsetY, second.offsetY);
+  assert.notEqual(first.rotation, second.rotation);
 });
 
 test("gera pulsos crescentes e um padrão próprio para o boom", () => {
