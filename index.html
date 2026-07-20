@@ -88,7 +88,9 @@
   </header>
 
   <section id="tripContext" class="trip-context" aria-labelledby="tripPlaceTitle">
-    <span class="trip-context-icon" aria-hidden="true">⌖</span>
+    <button id="locateButton" class="trip-context-icon" type="button" data-skip-motion-permission aria-label="Usar minha localização atual" aria-describedby="tripPlaceStatus">
+      <span aria-hidden="true">⌖</span>
+    </button>
     <div class="trip-context-copy">
       <span class="step-label">CONTEXTO DA CONTA</span>
       <strong id="tripPlaceTitle">Onde é esta viagem?</strong>
@@ -97,7 +99,7 @@
     <label class="trip-place-field" for="tripPlace">
       <span>Nome do lugar</span>
       <input id="tripPlace" type="text" maxlength="80" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="Ex.: Santiago, Chile" />
-      <small id="tripPlaceStatus" aria-live="polite">Será usado em toda esta conta.</small>
+      <small id="tripPlaceStatus" aria-live="polite">Digite ou toque no alvo para usar sua localização.</small>
     </label>
   </section>
 

@@ -347,7 +347,18 @@ input { min-width: 0; }
   background: rgba(169, 232, 255, .08);
   color: var(--primary);
   font-size: 19px;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease, opacity .18s ease;
 }
+
+.trip-context-icon:hover {
+  border-color: rgba(169, 232, 255, .38);
+  background: rgba(169, 232, 255, .14);
+  transform: translateY(-1px);
+}
+
+.trip-context-icon:active { transform: translateY(1px) scale(.97); }
+.trip-context-icon:disabled { cursor: wait; opacity: .72; }
+.trip-context-icon.is-locating span { display: block; animation: spin .8s linear infinite; }
 
 .trip-context-copy { min-width: 0; }
 
@@ -394,6 +405,8 @@ input { min-width: 0; }
   background: rgba(5, 20, 34, .84);
   box-shadow: 0 0 0 4px rgba(169, 232, 255, .07);
 }
+
+.trip-place-field input:disabled { opacity: .62; cursor: wait; }
 
 .trip-place-field input::placeholder { color: rgba(145, 169, 187, .48); }
 

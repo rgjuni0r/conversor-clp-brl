@@ -20,6 +20,10 @@ import {
   updateItem
 } from "./js/session-store.js";
 import {
+  getCurrentCoordinates,
+  reverseGeocodeCoordinates
+} from "./js/location.js";
+import {
   AUTOMATIC_REQUEST_DEBOUNCE_MS,
   RATE_REFRESH_INTERVAL_MS,
   RateService,
@@ -48,6 +52,7 @@ const elements = {
   inputCode: $("inputCode"),
   conversionForm: $("conversionForm"),
   tripContext: $("tripContext"),
+  locateButton: $("locateButton"),
   tripPlace: $("tripPlace"),
   tripPlaceStatus: $("tripPlaceStatus"),
   itemLabel: $("itemLabel"),
@@ -187,6 +192,7 @@ const state = {
   editDecimalPointTyped: false,
   editingItemId: null,
   isEditingPlace: false,
+  isLocating: false,
   placeWasPersisted: true,
   toastTimer: null,
   confirmationResolver: null,
@@ -384,12 +390,66 @@ function renderTripPlace({ syncInput = true } = {}) {
   elements.tripContext.hidden = !shouldShowEditor;
   elements.tripPlaceStatus.textContent = hasPlace
     ? "Salvo automaticamente nesta conta."
-    : "Será usado em toda esta conta.";
+    : "Digite ou toque no alvo para usar sua localização.";
   elements.summaryPlace.hidden = !hasPlace;
   elements.summaryPlaceName.textContent = placeName;
   elements.summaryCard.classList.toggle("has-trip-place", hasPlace);
   elements.receiptPlace.hidden = !hasPlace;
   elements.receiptPlaceName.textContent = placeName;
+}
+
+function getLocationErrorMessage(error) {
+  if (error?.code === 1) return "Permissão de localização negada. Digite o lugar manualmente.";
+  if (error?.code === 2) return "O aparelho não conseguiu determinar sua localização.";
+  if (error?.code === 3) return "A localização demorou demais. Tente novamente.";
+  if (error?.message === "GEOLOCATION_UNAVAILABLE") {
+    return "Localização indisponível neste navegador. Digite o lugar manualmente.";
+  }
+  if (!navigator.onLine) return "Sem conexão para identificar o lugar. Digite manualmente.";
+  return "Não foi possível identificar o lugar agora. Digite manualmente ou tente novamente.";
+}
+
+async function locateTripPlace() {
+  if (state.isLocating) return;
+
+  state.isLocating = true;
+  elements.locateButton.disabled = true;
+  elements.locateButton.classList.add("is-locating");
+  elements.locateButton.setAttribute("aria-busy", "true");
+  elements.tripPlace.disabled = true;
+  elements.tripPlaceStatus.textContent = "Obtendo sua localização…";
+
+  let shouldFocusManualField = false;
+
+  try {
+    const coordinates = await getCurrentCoordinates();
+    elements.tripPlaceStatus.textContent = "Identificando o nome do lugar…";
+    const placeName = await reverseGeocodeCoordinates(coordinates);
+
+    session.placeName = placeName;
+    const wasPersisted = persistSession();
+    state.placeWasPersisted = wasPersisted;
+    state.isEditingPlace = false;
+    renderTripPlace();
+    showToast(wasPersisted
+      ? `Localização adicionada: ${session.placeName}.`
+      : "Localização adicionada apenas nesta tela.");
+  } catch (error) {
+    state.isEditingPlace = true;
+    renderTripPlace({ syncInput: false });
+    elements.tripPlaceStatus.textContent = getLocationErrorMessage(error);
+    shouldFocusManualField = true;
+  } finally {
+    state.isLocating = false;
+    elements.locateButton.disabled = false;
+    elements.locateButton.classList.remove("is-locating");
+    elements.locateButton.setAttribute("aria-busy", "false");
+    elements.tripPlace.disabled = false;
+
+    if (shouldFocusManualField) {
+      window.setTimeout(() => elements.tripPlace.focus(), 0);
+    }
+  }
 }
 
 function getSplitSummary(totals = calculateTotals(session.items)) {
@@ -757,7 +817,10 @@ function requestMotionPermission({ fromGesture = false } = {}) {
 function requestMotionPermissionFromGesture(event) {
   if (
     !event.isTrusted
-    || (event.target instanceof Element && event.target.closest("a[href]"))
+    || (
+      event.target instanceof Element
+      && event.target.closest("a[href], [data-skip-motion-permission]")
+    )
   ) {
     return;
   }
@@ -1248,6 +1311,10 @@ elements.amount.addEventListener("input", () => {
 elements.amount.addEventListener("blur", () => {
   elements.amount.value = formatAmountInput(elements.amount.value, state.direction);
   renderConversion();
+});
+
+elements.locateButton.addEventListener("click", () => {
+  void locateTripPlace();
 });
 
 elements.tripPlace.addEventListener("input", () => {

@@ -51,6 +51,7 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Persistência da última cotação válida no navegador.
 - Ajuste manual da taxa de conversão.
 - Contexto único da conta com o nome do lugar, definido uma vez, salvo automaticamente e recolhido para o resumo após a confirmação.
+- Preenchimento opcional do lugar pela localização atual, acionado diretamente pelo usuário no ícone de alvo.
 - Inclusão de conversões em um resumo com descrição opcional.
 - Edição de descrição e valor com preservação da cotação originalmente registrada.
 - Registro da cotação e da origem usada em cada item.
@@ -81,7 +82,9 @@ flowchart TD
     APP --> MONEY[js/money.js<br/>máscaras, inteiros e divisão]
     APP --> SESSION[js/session-store.js<br/>sessão versionada]
     APP --> RATES[js/rates.js<br/>fontes e fallback]
+    APP --> LOCATION[js/location.js<br/>geolocalização e nome do lugar]
     APP --> MOTION[js/snow-motion.js<br/>shake, progressão e padrões táteis]
+    LOCATION --> BDC[BigDataCloud<br/>geocodificação reversa client-side]
     RATES --> PRIMARY[jsDelivr<br/>referência diária CC0]
     PRIMARY -->|sucesso| STORE[localStorage]
     PRIMARY -->|falha| FALLBACK[Cloudflare Pages<br/>espelho da mesma base]
@@ -100,6 +103,7 @@ flowchart TD
 | `style.css` | Design responsivo, tema, máscaras visuais e safe areas. |
 | `app.js` | Orquestração da interface, eventos, recibo e compartilhamento. |
 | `js/money.js` | Máscaras, formatação, conversões e divisão em unidades inteiras. |
+| `js/location.js` | Validação das coordenadas atuais e conversão client-side para um nome de localidade. |
 | `js/rates.js` | Consulta cambial, timeout, validação da resposta e espelho de contingência. |
 | `js/session-store.js` | Modelo versionado, validação e persistência da conta. |
 | `js/snow-motion.js` | Detecção de shake, progressão por impulsos distintos, rearme, cooldown e padrões táteis. |
@@ -188,11 +192,13 @@ Por esse motivo, o aplicativo não deve ser utilizado para liquidação financei
 conversor-clp-brl/
 ├── js/
 │   ├── money.js          # Moedas, máscaras, conversões e divisão
+│   ├── location.js       # Localização atual e geocodificação reversa
 │   ├── rates.js          # Serviços de cotação e contingência
 │   ├── session-store.js  # Sessão, validação e localStorage
 │   └── snow-motion.js    # Detecção de movimento e shake
 ├── tests/
 │   ├── money.test.js
+│   ├── location.test.js
 │   ├── rates.test.js
 │   ├── session-store.test.js
 │   └── snow-motion.test.js
@@ -316,12 +322,13 @@ Os caminhos do projeto são relativos, permitindo a publicação em um subdiret�
 
 ### Intervalos e endpoints
 
-As principais configurações estão declaradas em `js/rates.js`:
+As principais configurações estão declaradas em `js/rates.js` e `js/location.js`:
 
 | Constante | Finalidade | Valor atual |
 | --- | --- | --- |
 | `PRIMARY_RATE_API_URL` | Endpoint cambial principal. | Currency API via jsDelivr |
 | `FALLBACK_RATE_API_URL` | Espelho de contingência. | Currency API via Cloudflare Pages |
+| `REVERSE_GEOCODING_ENDPOINT` | Converte as coordenadas atuais em localidade/cidade. | [BigDataCloud client-side](https://www.bigdatacloud.com/free-api/free-reverse-geocode-to-city-api) |
 | `RATE_REFRESH_INTERVAL_MS` | Frequência com a página visível. | 1 hora |
 | `AUTOMATIC_REQUEST_DEBOUNCE_MS` | Proteção contra consultas duplicadas. | 15 segundos |
 
@@ -330,10 +337,10 @@ As principais configurações estão declaradas em `js/rates.js`:
 | Chave | Conteúdo |
 | --- | --- |
 | `clpBrlRateV2` | Snapshot atômico da última taxa válida, tipo da fonte e data de referência. |
-| `clpBrlSessionV1` | Sessão versionada com itens, pessoas, taxas registradas e status. |
+| `clpBrlSessionV1` | Sessão versionada com nome do lugar, itens, pessoas, taxas registradas e status. |
 | `clpBrlMotionPermissionV1` | Preferência local indicando que o usuário já ativou o efeito por movimento; a permissão real continua sob controle do navegador. |
 
-Nenhuma informação pessoal é armazenada.
+As coordenadas exatas nunca são persistidas. Somente o nome do lugar escolhido ou retornado é mantido na sessão local.
 
 ### Atualização do cache do PWA
 
@@ -341,7 +348,7 @@ Ao publicar uma alteração em `index.html`, `style.css`, `app.js`, ícones ou m
 
 ```js
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v34`;
+const CACHE = `${CACHE_PREFIX}v35`;
 ```
 
 Esse versionamento força a remoção do cache anterior durante a ativação do novo Service Worker.
@@ -361,11 +368,13 @@ Esse versionamento força a remoção do cache anterior durante a ativação do 
 - Incrementar a versão do cache.
 - Testar o tremor visual no Safari do iPhone, inclusive em paisagem, e o feedback tátil no Chrome do Android.
 - Reabrir o PWA após autorizar o movimento e confirmar que o app não solicita novamente enquanto a permissão do navegador continua válida.
+- Testar localização concedida, negada, indisponível e sem conexão, mantendo o preenchimento manual funcional.
 
 ## Privacidade e segurança
 
 - A aplicação não possui cadastro, cookies próprios ou coleta de dados pessoais.
 - Os valores digitados, a taxa e a sessão da conta permanecem no navegador do usuário.
+- A localização é solicitada somente após o toque no ícone. As coordenadas atuais são enviadas diretamente pelo navegador ao endpoint client-side da BigDataCloud para obter cidade/localidade, mas não são armazenadas pelo app; somente o nome resultante entra na sessão local.
 - Os dados do sensor de movimento são processados apenas em memória e nunca são armazenados ou enviados.
 - O app armazena somente que o efeito já foi ativado; a autorização real do sensor pertence ao navegador e ao sistema operacional.
 - O feedback tátil usa apenas padrões locais de duração e não coleta informações do aparelho.
@@ -384,6 +393,7 @@ Como o projeto é totalmente client-side, qualquer segredo incluído no JavaScri
 - A cotação comercial não representa automaticamente o custo de uma operação de turismo.
 - O ajuste manual é substituído quando uma atualização automática posterior é concluída com sucesso.
 - A aplicação não apresenta histórico ou gráfico de variação cambial.
+- O preenchimento automático do lugar exige HTTPS, permissão do usuário, suporte à Geolocation API e conexão durante a identificação do nome.
 - Itens já registrados preservam a cotação original e não são recalculados automaticamente.
 - O efeito de shake depende de suporte e permissão para `DeviceMotion`; sem isso, a neve ambiente continua normalmente.
 - Se o navegador apagar ou revogar a permissão de movimento, uma nova confirmação do sistema será inevitável no próximo gesto do usuário.
