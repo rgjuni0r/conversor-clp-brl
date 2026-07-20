@@ -24,6 +24,7 @@ import {
   RateService,
   formatRateDate
 } from "./js/rates.js";
+import { ShakeDetector } from "./js/snow-motion.js";
 
 const $ = id => document.getElementById(id);
 
@@ -116,6 +117,14 @@ const RATE_STORAGE_KEY = "clpBrlRateV2";
 const rateService = new RateService();
 const mobileSummaryAccordion = window.matchMedia("(max-width: 820px)");
 const reducedMotionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+const shakeDetector = new ShakeDetector();
+const SNOW_GLOBE_DURATION_MS = 7_000;
+const snowMotionState = {
+  isListening: false,
+  permissionStatus: "unknown",
+  permissionGestureArmed: false,
+  effectTimer: null
+};
 const storedRate = readStoredRateSnapshot();
 
 const state = {
@@ -427,6 +436,127 @@ function showToast(message) {
   elements.toast.textContent = message;
   elements.toast.classList.add("show");
   state.toastTimer = window.setTimeout(() => elements.toast.classList.remove("show"), 2600);
+}
+
+function stopSnowGlobeEffect() {
+  window.clearTimeout(snowMotionState.effectTimer);
+  snowMotionState.effectTimer = null;
+  document.body.classList.remove("snow-globe-active");
+}
+
+function triggerSnowGlobeEffect() {
+  if (
+    !mobileSummaryAccordion.matches
+    || reducedMotionPreference.matches
+    || document.visibilityState !== "visible"
+  ) {
+    return;
+  }
+
+  window.clearTimeout(snowMotionState.effectTimer);
+  document.body.classList.remove("snow-globe-active");
+  void document.body.offsetWidth;
+  document.body.classList.add("snow-globe-active");
+
+  snowMotionState.effectTimer = window.setTimeout(() => {
+    document.body.classList.remove("snow-globe-active");
+    snowMotionState.effectTimer = null;
+  }, SNOW_GLOBE_DURATION_MS);
+}
+
+function handleDeviceMotion(event) {
+  if (shakeDetector.sample(event, performance.now())) triggerSnowGlobeEffect();
+}
+
+function startMotionListener() {
+  if (
+    snowMotionState.isListening
+    || !mobileSummaryAccordion.matches
+    || reducedMotionPreference.matches
+    || document.visibilityState !== "visible"
+  ) {
+    return;
+  }
+
+  shakeDetector.reset();
+  window.addEventListener("devicemotion", handleDeviceMotion, { passive: true });
+  snowMotionState.isListening = true;
+}
+
+function stopMotionListener() {
+  if (!snowMotionState.isListening) return;
+
+  window.removeEventListener("devicemotion", handleDeviceMotion);
+  shakeDetector.reset();
+  snowMotionState.isListening = false;
+}
+
+function disarmMotionPermissionGesture() {
+  if (!snowMotionState.permissionGestureArmed) return;
+
+  document.removeEventListener("click", requestMotionPermissionFromGesture, true);
+  snowMotionState.permissionGestureArmed = false;
+}
+
+async function requestMotionPermissionFromGesture() {
+  disarmMotionPermissionGesture();
+  if (!mobileSummaryAccordion.matches || reducedMotionPreference.matches) return;
+
+  const MotionEvent = window.DeviceMotionEvent;
+  if (typeof MotionEvent?.requestPermission !== "function") return;
+
+  snowMotionState.permissionStatus = "requesting";
+
+  try {
+    const permission = await MotionEvent.requestPermission();
+    snowMotionState.permissionStatus = permission === "granted" ? "granted" : "denied";
+
+    if (permission === "granted") {
+      startMotionListener();
+      showToast("Globo de neve ativado — agora agite o celular.");
+    }
+  } catch {
+    snowMotionState.permissionStatus = "denied";
+  }
+}
+
+function armMotionPermissionGesture() {
+  if (
+    snowMotionState.permissionGestureArmed
+    || snowMotionState.permissionStatus !== "unknown"
+  ) {
+    return;
+  }
+
+  document.addEventListener("click", requestMotionPermissionFromGesture, {
+    capture: true,
+    once: true
+  });
+  snowMotionState.permissionGestureArmed = true;
+}
+
+function syncMotionSnow() {
+  const canUseMotion = mobileSummaryAccordion.matches
+    && !reducedMotionPreference.matches
+    && document.visibilityState === "visible"
+    && typeof window.DeviceMotionEvent !== "undefined";
+
+  if (!canUseMotion) {
+    disarmMotionPermissionGesture();
+    stopMotionListener();
+    stopSnowGlobeEffect();
+    return;
+  }
+
+  const MotionEvent = window.DeviceMotionEvent;
+  if (typeof MotionEvent.requestPermission === "function") {
+    if (snowMotionState.permissionStatus === "granted") startMotionListener();
+    else if (snowMotionState.permissionStatus === "unknown") armMotionPermissionGesture();
+    return;
+  }
+
+  snowMotionState.permissionStatus = "granted";
+  startMotionListener();
 }
 
 function showReceiptFeedback(message) {
@@ -885,11 +1015,26 @@ elements.mobileSummaryButton.addEventListener("click", () => {
 
 if (typeof mobileSummaryAccordion.addEventListener === "function") {
   mobileSummaryAccordion.addEventListener("change", syncSummaryAccordion);
+  mobileSummaryAccordion.addEventListener("change", syncMotionSnow);
 } else {
   mobileSummaryAccordion.addListener(syncSummaryAccordion);
+  mobileSummaryAccordion.addListener(syncMotionSnow);
 }
 
-window.addEventListener("pageshow", () => updateExchangeRate({ automatic: true }));
+if (typeof reducedMotionPreference.addEventListener === "function") {
+  reducedMotionPreference.addEventListener("change", syncMotionSnow);
+} else {
+  reducedMotionPreference.addListener(syncMotionSnow);
+}
+
+window.addEventListener("pageshow", () => {
+  updateExchangeRate({ automatic: true });
+  syncMotionSnow();
+});
+window.addEventListener("pagehide", () => {
+  stopMotionListener();
+  stopSnowGlobeEffect();
+});
 window.addEventListener("online", () => updateExchangeRate({ automatic: true }));
 window.addEventListener("offline", () => {
   elements.status.textContent = "Você está offline · a última cotação salva e o resumo continuam disponíveis.";
@@ -897,6 +1042,7 @@ window.addEventListener("offline", () => {
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") updateExchangeRate({ automatic: true });
+  syncMotionSnow();
 });
 
 window.setInterval(() => {
@@ -905,6 +1051,7 @@ window.setInterval(() => {
 
 syncSummaryAccordion();
 renderAll();
+syncMotionSnow();
 
 if (session.status === "closed" && session.items.length > 0) {
   renderReceipt();

@@ -1,6 +1,6 @@
 
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v25`;
+const CACHE = `${CACHE_PREFIX}v26`;
 const ASSETS = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const ASSETS = [
   "./js/money.js",
   "./js/rates.js",
   "./js/session-store.js",
+  "./js/snow-motion.js",
   "./manifest.json",
   "./favicon.ico",
   "./icon-192.png",

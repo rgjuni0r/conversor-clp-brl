@@ -63,6 +63,7 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Instalação como PWA no iPhone, Android e navegadores compatíveis.
 - Layout responsivo com suporte às áreas seguras do iPhone.
 - Identidade visual inspirada na Cordilheira dos Andes, com neve animada em profundidade e movimento acessível.
+- Efeito de globo de neve no mobile, intensificado temporariamente ao agitar o aparelho.
 - Resumo em accordion na versão mobile, preservando a visualização completa no desktop.
 
 ## Arquitetura
@@ -76,6 +77,7 @@ flowchart TD
     APP --> MONEY[js/money.js<br/>máscaras, inteiros e divisão]
     APP --> SESSION[js/session-store.js<br/>sessão versionada]
     APP --> RATES[js/rates.js<br/>fontes e fallback]
+    APP --> MOTION[js/snow-motion.js<br/>detecção local de shake]
     RATES --> PRIMARY[jsDelivr<br/>referência diária CC0]
     PRIMARY -->|sucesso| STORE[localStorage]
     PRIMARY -->|falha| FALLBACK[Cloudflare Pages<br/>espelho da mesma base]
@@ -96,9 +98,10 @@ flowchart TD
 | `js/money.js` | Máscaras, formatação, conversões e divisão em unidades inteiras. |
 | `js/rates.js` | Consulta cambial, timeout, validação da resposta e espelho de contingência. |
 | `js/session-store.js` | Modelo versionado, validação e persistência da conta. |
+| `js/snow-motion.js` | Detecção de shake, limiar, janela de impulsos e cooldown. |
 | `sw.js` | Cache dos arquivos locais e funcionamento offline do shell. |
 | `manifest.json` | Nome, ícones, cores e comportamento de instalação do PWA. |
-| `tests/` | Testes automatizados de moeda, sessão, divisão e fontes cambiais. |
+| `tests/` | Testes automatizados de moeda, sessão, divisão, fontes cambiais e movimento. |
 | `localStorage` | Última taxa válida e sessão atual da conta. |
 
 ### Estratégia de resiliência
@@ -182,11 +185,13 @@ conversor-clp-brl/
 ├── js/
 │   ├── money.js          # Moedas, máscaras, conversões e divisão
 │   ├── rates.js          # Serviços de cotação e contingência
-│   └── session-store.js  # Sessão, validação e localStorage
+│   ├── session-store.js  # Sessão, validação e localStorage
+│   └── snow-motion.js    # Detecção de movimento e shake
 ├── tests/
 │   ├── money.test.js
 │   ├── rates.test.js
-│   └── session-store.test.js
+│   ├── session-store.test.js
+│   └── snow-motion.test.js
 ├── index.html            # Interface semântica da aplicação
 ├── style.css             # Design, componentes e responsividade
 ├── app.js                # Orquestração da experiência
@@ -243,8 +248,8 @@ A suíte cobre:
 - divisão exata com distribuição de resíduo;
 - criação, persistência e recuperação de sessões;
 - descarte seguro de dados corrompidos;
-- média entre compra e venda;
 - validação da cotação diária e fallback entre os dois espelhos.
+- detecção de shake, cooldown e fallback de aceleração com gravidade.
 
 ## Instalação como aplicativo
 
@@ -255,6 +260,8 @@ A suíte cobre:
 3. Toque em **Compartilhar**.
 4. Selecione **Adicionar à Tela de Início**.
 5. Confirme em **Adicionar**.
+
+Na primeira interação, o iOS pode solicitar acesso aos sensores de movimento. Ao permitir, agitar o aparelho intensifica a neve por alguns segundos. O efeito permanece desativado quando a preferência **Reduzir Movimento** está ativa.
 
 ### Android
 
@@ -324,7 +331,7 @@ Ao publicar uma alteração em `index.html`, `style.css`, `app.js`, ícones ou m
 
 ```js
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v26`;
+const CACHE = `${CACHE_PREFIX}v27`;
 ```
 
 Esse versionamento força a remoção do cache anterior durante a ativação do novo Service Worker.
@@ -348,6 +355,7 @@ Esse versionamento força a remoção do cache anterior durante a ativação do 
 
 - A aplicação não possui cadastro, cookies próprios ou coleta de dados pessoais.
 - Os valores digitados, a taxa e a sessão da conta permanecem no navegador do usuário.
+- Os dados do sensor de movimento são processados apenas em memória e nunca são armazenados ou enviados.
 - As consultas cambiais são enviadas diretamente às APIs identificadas neste documento.
 - Não existem chaves privadas ou segredos incorporados ao código.
 - Em produção, o PWA deve ser servido exclusivamente por HTTPS.
@@ -364,6 +372,7 @@ Como o projeto é totalmente client-side, qualquer segredo incluído no JavaScri
 - O ajuste manual é substituído quando uma atualização automática posterior é concluída com sucesso.
 - A aplicação não apresenta histórico ou gráfico de variação cambial.
 - Itens já registrados preservam a cotação original e não são recalculados automaticamente.
+- O efeito de shake depende de suporte e permissão para `DeviceMotion`; sem isso, a neve ambiente continua normalmente.
 
 ## Roadmap
 

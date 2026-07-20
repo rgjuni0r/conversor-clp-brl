@@ -165,6 +165,35 @@ input { min-width: 0; }
   animation: snow-fall-near 24s linear infinite;
 }
 
+.snow-layer-burst,
+.snow-layer-swirl {
+  display: none;
+  opacity: 0;
+}
+
+.snow-layer-burst {
+  left: -18vw;
+  width: 136vw;
+  background-image:
+    radial-gradient(circle, rgba(250, 254, 255, .96) 0 1.6px, transparent 2.2px),
+    radial-gradient(circle, rgba(235, 248, 255, .88) 0 1.2px, transparent 1.9px),
+    radial-gradient(circle, rgba(250, 254, 255, .72) 0 2.1px, transparent 2.8px),
+    radial-gradient(circle, rgba(220, 241, 252, .72) 0 1px, transparent 1.7px);
+  background-position: 8px 14px, 43px 71px, 97px 32px, 121px 104px;
+  background-size: 61px 73px, 89px 107px, 137px 151px, 173px 191px;
+}
+
+.snow-layer-swirl {
+  left: -24vw;
+  width: 148vw;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, .92) 0 2.5px, transparent 3.2px),
+    radial-gradient(circle, rgba(225, 244, 255, .8) 0 1.8px, transparent 2.6px),
+    radial-gradient(circle, rgba(249, 253, 255, .76) 0 1.3px, transparent 2px);
+  background-position: 24px 48px, 91px 13px, 157px 126px;
+  background-size: 149px 167px, 211px 229px, 277px 251px;
+}
+
 .snowfall-foreground {
   position: fixed;
   z-index: 3;
@@ -1189,6 +1218,19 @@ label,
   92% { opacity: .62; }
   100% { opacity: 0; transform: translate3d(var(--snow-drift), 116vh, 0) rotate(140deg); }
 }
+@keyframes snow-globe-burst {
+  0% { opacity: 0; transform: translate3d(-8vw, -8vh, 0) rotate(-2deg); }
+  12% { opacity: .88; }
+  55% { opacity: .7; transform: translate3d(7vw, 72vh, 0) rotate(2deg); }
+  100% { opacity: 0; transform: translate3d(-3vw, 145vh, 0) rotate(-1deg); }
+}
+@keyframes snow-globe-swirl {
+  0% { opacity: 0; transform: translate3d(10vw, -2vh, 0) rotate(2deg); }
+  14% { opacity: .72; }
+  42% { transform: translate3d(-9vw, 48vh, 0) rotate(-3deg); }
+  72% { opacity: .58; transform: translate3d(8vw, 92vh, 0) rotate(2deg); }
+  100% { opacity: 0; transform: translate3d(-5vw, 145vh, 0) rotate(-1deg); }
+}
 @keyframes accordion-in {
   from { opacity: 0; transform: translateY(-7px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1209,6 +1251,36 @@ label,
   .item-field input,
   .manual-grid input,
   .people-stepper input { font-size: 16px; }
+
+  body.snow-globe-active .snow-layer-burst,
+  body.snow-globe-active .snow-layer-swirl { display: block; }
+
+  body.snow-globe-active .snow-layer-burst {
+    animation: snow-globe-burst 6.2s cubic-bezier(.16, .68, .22, 1) both;
+  }
+
+  body.snow-globe-active .snow-layer-swirl {
+    animation: snow-globe-swirl 6.8s cubic-bezier(.2, .64, .2, 1) .08s both;
+  }
+
+  body.snow-globe-active .snow-layer-far {
+    display: block;
+    opacity: .5;
+    animation-duration: 10s;
+  }
+
+  body.snow-globe-active .snow-layer-near {
+    opacity: .68;
+    animation-duration: 6.5s;
+  }
+
+  body.snow-globe-active .snowfall-foreground { opacity: 1; }
+
+  body.snow-globe-active .snowflake {
+    display: block;
+    animation-duration: calc(var(--snow-duration) * .38);
+    filter: brightness(1.12);
+  }
 
   .hero { margin-bottom: 20px; padding-inline: 3px; }
   .brand-row { margin-bottom: 24px; }
@@ -1378,6 +1450,9 @@ label,
 
 @media (prefers-reduced-motion: reduce) {
   .snowfall-foreground { display: none; }
+
+  .snow-layer-burst,
+  .snow-layer-swirl { display: none !important; opacity: 0 !important; }
 
   .snow-layer {
     animation: none !important;
