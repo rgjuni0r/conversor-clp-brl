@@ -3,24 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#07110f" />
+  <meta name="theme-color" content="#04111e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Conta Chile" />
+  <meta name="apple-mobile-web-app-title" content="CLP ⬌ BRL" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="stylesheet" href="style.css" />
-  <title>Conta Chile · Conversor CLP ⇄ BRL</title>
+  <title>CLP ⬌ BRL · Conversor de viagem</title>
 </head>
 <body>
-  <div class="ambient ambient-one" aria-hidden="true"></div>
-  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div class="andes-scene" aria-hidden="true">
+    <div class="dawn-glow"></div>
+    <svg class="andes-ranges" viewBox="0 0 1600 600" preserveAspectRatio="xMidYMid slice" focusable="false">
+      <defs>
+        <linearGradient id="ridgeFar" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#31536a" />
+          <stop offset="1" stop-color="#142d40" />
+        </linearGradient>
+        <linearGradient id="ridgeNear" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#17364b" />
+          <stop offset="1" stop-color="#0a1d2d" />
+        </linearGradient>
+        <linearGradient id="snowCap" x1="0" y1="0" x2="0.7" y2="1">
+          <stop offset="0" stop-color="#f7fcff" />
+          <stop offset="1" stop-color="#a9cfe2" />
+        </linearGradient>
+      </defs>
+      <path class="ridge-far" fill="url(#ridgeFar)" d="M-40 600V455L120 360l95 48 155-188 120 150 120-76 160 151 130-87 110 72 150-158 95 88 135-164 125 149 125-87 165 342Z" />
+      <path class="snow-cap snow-cap-far" fill="url(#snowCap)" d="M298 307l72-87 82 109-42-23-27-37-23 23-18-19zm792 35 70-70 76 70-43-20-31-31-25 26zm237-68 63-78 72 86-38-20-27-35-21 22-18-17z" />
+      <path class="ridge-near" fill="url(#ridgeNear)" d="M-40 600v-95l210-116 160 97 210-168 160 162 170-130 160 130 200-178 180 128 230-92 60 262Z" />
+      <path class="snow-cap snow-cap-near" fill="url(#snowCap)" d="M453 387l87-69 77 79-37-14-28-34-22 17-20-21zm333 27 84-64 72 69-36-13-27-30-20 16-17-18zm357-46 87-66 80 71-42-14-28-29-20 17-20-18z" />
+      <path class="ridge-front" d="M-40 600v-42l235-91 188 85 218-111 215 119 225-105 205 104 232-103 202 74v70Z" />
+    </svg>
+    <div class="mountain-mist"></div>
+  </div>
+
+  <div class="snowfall" aria-hidden="true">
+    <span class="snow-layer snow-layer-far"></span>
+    <span class="snow-layer snow-layer-near"></span>
+  </div>
+
+  <div class="snowfall-foreground" aria-hidden="true">
+    <i class="snowflake" style="--snow-x: 4%; --snow-size: 4px; --snow-duration: 14s; --snow-delay: -6s; --snow-drift: 22px;"></i>
+    <i class="snowflake snow-crystal" style="--snow-x: 10%; --snow-size: 7px; --snow-duration: 17s; --snow-delay: -13s; --snow-drift: -28px;"></i>
+    <i class="snowflake" style="--snow-x: 17%; --snow-size: 3px; --snow-duration: 11s; --snow-delay: -3s; --snow-drift: 16px;"></i>
+    <i class="snowflake" style="--snow-x: 24%; --snow-size: 5px; --snow-duration: 15s; --snow-delay: -9s; --snow-drift: -20px;"></i>
+    <i class="snowflake snow-crystal" style="--snow-x: 31%; --snow-size: 8px; --snow-duration: 19s; --snow-delay: -5s; --snow-drift: 35px;"></i>
+    <i class="snowflake" style="--snow-x: 38%; --snow-size: 3px; --snow-duration: 12s; --snow-delay: -10s; --snow-drift: -18px;"></i>
+    <i class="snowflake" style="--snow-x: 45%; --snow-size: 6px; --snow-duration: 16s; --snow-delay: -1s; --snow-drift: 26px;"></i>
+    <i class="snowflake" style="--snow-x: 52%; --snow-size: 4px; --snow-duration: 13s; --snow-delay: -8s; --snow-drift: -24px;"></i>
+    <i class="snowflake snow-crystal" style="--snow-x: 59%; --snow-size: 9px; --snow-duration: 20s; --snow-delay: -15s; --snow-drift: 32px;"></i>
+    <i class="snowflake" style="--snow-x: 66%; --snow-size: 3px; --snow-duration: 10s; --snow-delay: -4s; --snow-drift: -15px;"></i>
+    <i class="snowflake" style="--snow-x: 72%; --snow-size: 6px; --snow-duration: 15s; --snow-delay: -12s; --snow-drift: 22px;"></i>
+    <i class="snowflake" style="--snow-x: 78%; --snow-size: 4px; --snow-duration: 12s; --snow-delay: -7s; --snow-drift: -28px;"></i>
+    <i class="snowflake snow-crystal" style="--snow-x: 84%; --snow-size: 8px; --snow-duration: 18s; --snow-delay: -2s; --snow-drift: 30px;"></i>
+    <i class="snowflake" style="--snow-x: 90%; --snow-size: 5px; --snow-duration: 14s; --snow-delay: -11s; --snow-drift: -20px;"></i>
+    <i class="snowflake" style="--snow-x: 96%; --snow-size: 3px; --snow-duration: 11s; --snow-delay: -5s; --snow-drift: 16px;"></i>
+    <i class="snowflake" style="--snow-x: 14%; --snow-size: 4px; --snow-duration: 19s; --snow-delay: -16s; --snow-drift: 40px;"></i>
+    <i class="snowflake snow-crystal" style="--snow-x: 48%; --snow-size: 7px; --snow-duration: 21s; --snow-delay: -17s; --snow-drift: -40px;"></i>
+    <i class="snowflake" style="--snow-x: 87%; --snow-size: 3px; --snow-duration: 16s; --snow-delay: -14s; --snow-drift: 18px;"></i>
+  </div>
 
   <header class="hero">
     <div class="brand-row">
       <div class="brand-mark" aria-hidden="true">
         <span>CLP</span>
-        <i>↗</i>
+        <i>⬌</i>
         <span>BRL</span>
       </div>
       <div class="rate-chip" title="Cotação usada neste momento">
@@ -79,7 +130,7 @@
           <span>Cotação usada agora</span>
           <strong id="rateText">1 CLP = R$ 0,00555</strong>
         </div>
-        <button id="refreshButton" class="refresh-button" type="button">
+        <button id="refreshButton" class="refresh-button" type="button" aria-label="Atualizar cotação">
           <span class="refresh-icon" aria-hidden="true">↻</span>
           <span>Atualizar</span>
         </button>
@@ -91,7 +142,7 @@
         <summary>Ajustar cotação manualmente</summary>
         <div class="manual-grid">
           <label for="manualRate">1 CLP vale quantos BRL?</label>
-          <input id="manualRate" type="number" inputmode="decimal" step="0.0000001" min="0" value="0.00555" />
+          <input id="manualRate" type="number" inputmode="decimal" step="0.0000000001" min="0" value="0.00555" />
           <button id="saveRateButton" class="secondary-button" type="button">Salvar cotação manual</button>
         </div>
       </details>
@@ -99,73 +150,83 @@
 
     <section id="summaryCard" class="surface summary-card" aria-labelledby="summaryTitle">
       <div class="section-heading summary-heading">
-        <div>
-          <span class="step-label">02 · SOMAR E DIVIDIR</span>
-          <div class="title-with-count">
-            <h2 id="summaryTitle">Resumo da conta</h2>
-            <span id="entryCount" class="count-badge">0</span>
-          </div>
-        </div>
+        <h2 id="summaryTitle" class="summary-title-wrapper">
+          <button id="summaryToggle" class="summary-toggle" type="button" aria-expanded="true" aria-controls="summaryPanel" disabled>
+            <span class="summary-toggle-copy">
+              <span class="step-label">02 · SOMAR E DIVIDIR</span>
+              <span class="title-with-count">
+                <span class="summary-title">Resumo da conta</span>
+                <span id="entryCount" class="count-badge">0</span>
+              </span>
+            </span>
+            <span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+        </h2>
         <button id="clearSummaryButton" class="text-button" type="button" disabled>Limpar</button>
       </div>
 
-      <div id="emptyState" class="empty-state">
-        <div class="empty-illustration" aria-hidden="true">
-          <span></span><span></span><span></span>
-          <i>＋</i>
-        </div>
-        <strong>Seu resumo está vazio</strong>
-        <p>Converta um valor e toque em “Adicionar ao resumo”.</p>
-      </div>
-
-      <div id="summaryContent" class="summary-content" hidden>
-        <ul id="itemsList" class="items-list" aria-label="Itens adicionados à conta"></ul>
-
-        <p class="rate-lock-note">
-          <span aria-hidden="true">◆</span>
-          Cada item guarda a cotação usada no momento em que foi adicionado.
-        </p>
-
-        <div class="totals-card" aria-live="polite">
-          <span>Total da conta</span>
-          <div class="total-primary">
-            <strong id="totalBrl">R$ 0,00</strong>
-            <small id="totalClp">$ 0 CLP</small>
+      <div id="summaryPanel" class="summary-panel">
+        <div id="emptyState" class="empty-state">
+          <div class="empty-illustration" aria-hidden="true">
+            <span></span><span></span><span></span>
+            <i>＋</i>
           </div>
+          <strong>Seu resumo está vazio</strong>
+          <p>Converta um valor e toque em “Adicionar ao resumo”.</p>
         </div>
 
-        <div class="split-card">
-          <div class="split-heading">
-            <div>
-              <span>Dividir entre</span>
-              <strong>Pessoas na conta</strong>
-            </div>
-            <div class="people-stepper" role="group" aria-label="Quantidade de pessoas">
-              <button id="decreasePeopleButton" type="button" aria-label="Diminuir pessoas">−</button>
-              <input id="peopleCount" type="number" inputmode="numeric" min="1" max="99" value="1" aria-label="Número de pessoas" />
-              <button id="increasePeopleButton" type="button" aria-label="Aumentar pessoas">＋</button>
+        <div id="summaryContent" class="summary-content" hidden>
+          <ul id="itemsList" class="items-list" aria-label="Itens adicionados à conta"></ul>
+
+          <p class="rate-lock-note">
+            <span aria-hidden="true">◆</span>
+            Cada item guarda a cotação usada no momento em que foi adicionado.
+          </p>
+
+          <div class="totals-card" aria-live="polite">
+            <span>Total da conta</span>
+            <div class="total-primary">
+              <strong id="totalBrl">R$ 0,00</strong>
+              <small id="totalClp">$ 0 CLP</small>
             </div>
           </div>
 
-          <div class="per-person-result">
-            <span>Por pessoa</span>
-            <strong id="perPersonBrl">R$ 0,00</strong>
-            <small id="perPersonClp">$ 0 CLP</small>
-          </div>
-          <p id="splitNote" class="split-note"></p>
-        </div>
+          <div class="split-card">
+            <div class="split-heading">
+              <div>
+                <span>Dividir entre</span>
+                <strong>Pessoas na conta</strong>
+              </div>
+              <div class="people-stepper" role="group" aria-label="Quantidade de pessoas">
+                <button id="decreasePeopleButton" type="button" aria-label="Diminuir pessoas">−</button>
+                <input id="peopleCount" type="number" inputmode="numeric" min="1" max="99" value="1" aria-label="Número de pessoas" />
+                <button id="increasePeopleButton" type="button" aria-label="Aumentar pessoas">＋</button>
+              </div>
+            </div>
 
-        <button id="closeAccountButton" class="close-account-button" type="button">
-          <span>Fechar a conta</span>
-          <span aria-hidden="true">→</span>
-        </button>
+            <div class="per-person-result">
+              <span id="perPersonLabel">Por pessoa</span>
+              <strong id="perPersonBrl">R$ 0,00</strong>
+              <small id="perPersonClp">$ 0 CLP</small>
+            </div>
+            <p id="splitNote" class="split-note"></p>
+          </div>
+
+          <button id="closeAccountButton" class="close-account-button" type="button">
+            <span>Fechar a conta</span>
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
       </div>
     </section>
   </main>
 
   <button id="mobileSummaryButton" class="mobile-summary-bar" type="button" hidden>
-    <span><strong id="mobileItemCount">0 itens</strong><small>Ver resumo</small></span>
-    <strong id="mobileTotalBrl">R$ 0,00</strong>
+    <span class="mobile-summary-copy"><strong id="mobileItemCount">0 itens</strong><small>Ver resumo</small></span>
+    <span class="mobile-summary-totals">
+      <strong id="mobileTotalBrl">R$ 0,00</strong>
+      <small id="mobileTotalClp" class="mobile-total-clp">$ 0 CLP</small>
+    </span>
   </button>
 
   <footer class="site-footer">
@@ -209,13 +270,14 @@
           <strong id="receiptPeople">1</strong>
         </div>
         <div>
-          <span>Por pessoa</span>
+          <span id="receiptPerPersonLabel">Por pessoa</span>
           <strong id="receiptPerPersonBrl">R$ 0,00</strong>
           <small id="receiptPerPersonClp">$ 0 CLP</small>
         </div>
       </div>
 
       <p id="receiptSplitNote" class="receipt-note"></p>
+      <p id="receiptFeedback" class="receipt-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
 
       <div class="receipt-actions">
         <button id="shareReceiptButton" class="share-button" type="button">

@@ -28,6 +28,9 @@ test("aplica máscaras de CLP e BRL durante a digitação", () => {
   assert.equal(formatAmountInput("CLP 008500", DIRECTIONS.CLP_TO_BRL), "8.500");
   assert.equal(formatAmountInput("1234,56", DIRECTIONS.BRL_TO_CLP), "1.234,56");
   assert.equal(formatAmountInput("10.50", DIRECTIONS.BRL_TO_CLP, { allowDecimalPoint: true }), "10,50");
+  assert.equal(formatAmountInput("10.50", DIRECTIONS.BRL_TO_CLP), "10,50");
+  assert.equal(formatAmountInput("1,234.56", DIRECTIONS.BRL_TO_CLP), "1.234,56");
+  assert.equal(formatAmountInput("1.000", DIRECTIONS.BRL_TO_CLP), "1.000");
   assert.equal(formatAmountInput(",5", DIRECTIONS.BRL_TO_CLP), "0,5");
   assert.equal(formatAmountInput("", DIRECTIONS.CLP_TO_BRL), "");
 });
@@ -45,6 +48,17 @@ test("converte CLP para BRL usando unidades monetárias inteiras", () => {
     sourceCurrency: "CLP",
     sourceAmount: 8500
   });
+});
+
+test("arredonda meias unidades monetárias com precisão decimal", () => {
+  assert.equal(
+    convertAmount(15000, DIRECTIONS.CLP_TO_BRL, 0.005507).brlCents,
+    8261
+  );
+  assert.equal(
+    convertAmount(1.005, DIRECTIONS.BRL_TO_CLP, 0.0055).brlCents,
+    101
+  );
 });
 
 test("converte BRL para CLP usando unidades monetárias inteiras", () => {

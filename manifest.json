@@ -1,10 +1,10 @@
 {
-  "name": "Conta Chile — Conversor e divisão de gastos",
-  "short_name": "Conta Chile",
+  "name": "CLP ⬌ BRL",
+  "short_name": "CLP ⬌ BRL",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#07110f",
-  "theme_color": "#07110f",
+  "background_color": "#04111e",
+  "theme_color": "#04111e",
   "description": "Converta CLP e BRL, organize gastos e divida a conta da viagem.",
   "icons": [
     {

@@ -9,8 +9,8 @@ const VALID_STATUSES = new Set(["open", "closed"]);
 const VALID_RATE_KINDS = new Set(["realtime", "daily", "manual", "cached", "default"]);
 
 const RATE_SOURCE_LABELS = Object.freeze({
-  realtime: "AwesomeAPI",
-  daily: "ExchangeRate-API",
+  realtime: "Referência de mercado",
+  daily: "Currency API",
   manual: "Cotação manual",
   cached: "Cache local",
   default: "Referência inicial"
@@ -166,9 +166,24 @@ function sanitizeSession(value) {
 
   const timestamp = nowIso();
   const createdAt = normalizeTimestamp(value.createdAt, timestamp);
-  const items = Array.isArray(value.items)
-    ? value.items.map(item => buildItem(item, { preserveMetadata: true })).filter(Boolean)
-    : [];
+  const items = [];
+  let totalClpPesos = 0;
+  let totalBrlCents = 0;
+
+  if (Array.isArray(value.items)) {
+    for (const payload of value.items) {
+      const item = buildItem(payload, { preserveMetadata: true });
+      if (!item) continue;
+
+      const nextClpTotal = totalClpPesos + item.clpPesos;
+      const nextBrlTotal = totalBrlCents + item.brlCents;
+      if (!Number.isSafeInteger(nextClpTotal) || !Number.isSafeInteger(nextBrlTotal)) continue;
+
+      items.push(item);
+      totalClpPesos = nextClpTotal;
+      totalBrlCents = nextBrlTotal;
+    }
+  }
 
   return {
     schemaVersion: SESSION_SCHEMA_VERSION,
@@ -233,10 +248,9 @@ export function saveSession(session, storage) {
 
   normalizedSession.updatedAt = nowIso();
   const resolvedStorage = normalizeStorage(storage);
+  if (!resolvedStorage) throw new Error("Armazenamento local indisponível.");
 
-  if (resolvedStorage) {
-    resolvedStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(normalizedSession));
-  }
+  resolvedStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(normalizedSession));
 
   return normalizedSession;
 }

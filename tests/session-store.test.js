@@ -40,7 +40,7 @@ function validItem(overrides = {}) {
     brlCents: 4675,
     rateClpToBrl: 0.0055,
     rateKind: "realtime",
-    rateSource: "AwesomeAPI",
+    rateSource: "Currency API",
     rateSourceUpdatedAt: "2026-07-19T15:00:00.000Z",
     ...overrides
   });
@@ -68,7 +68,7 @@ test("cria item com direção, cotação, origem, timestamps e unidades inteiras
   assert.equal(item.brlCents, 4675);
   assert.equal(item.rateClpToBrl, 0.0055);
   assert.equal(item.rateKind, "realtime");
-  assert.equal(item.rateSource, "AwesomeAPI");
+  assert.equal(item.rateSource, "Currency API");
   assert.equal(item.label.includes("\n"), false);
   assert.ok(item.label.length <= 60);
   assert.ok(!Number.isNaN(Date.parse(item.createdAt)));
@@ -143,6 +143,25 @@ test("remove itens estruturalmente inválidos sem derrubar a sessão", () => {
 
   assert.equal(loaded.items.length, 1);
   assert.equal(loaded.items[0].label, "Almoço");
+});
+
+test("descarta itens que fariam o total ultrapassar o inteiro seguro", () => {
+  const storage = new MemoryStorage();
+  const session = createSession();
+  session.items = [
+    validItem({ clpPesos: Number.MAX_SAFE_INTEGER, brlCents: Number.MAX_SAFE_INTEGER }),
+    validItem({ clpPesos: 1, brlCents: 1 })
+  ];
+  storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+
+  const loaded = loadSession(storage);
+
+  assert.equal(loaded.items.length, 1);
+  assert.equal(loaded.items[0].clpPesos, Number.MAX_SAFE_INTEGER);
+});
+
+test("informa quando não existe armazenamento para salvar", () => {
+  assert.throws(() => saveSession(createSession(), null), /Armazenamento local/);
 });
 
 test("limpa a sessão persistida", () => {

@@ -1,8 +1,7 @@
-export const REALTIME_RATE_API_URL = "https://economia.awesomeapi.com.br/json/last/CLP-BRL";
-export const DAILY_RATE_API_URL = "https://open.er-api.com/v6/latest/CLP";
-export const RATE_REFRESH_INTERVAL_MS = 60_000;
+export const PRIMARY_RATE_API_URL = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/clp.min.json";
+export const FALLBACK_RATE_API_URL = "https://latest.currency-api.pages.dev/v1/currencies/clp.json";
+export const RATE_REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 export const AUTOMATIC_REQUEST_DEBOUNCE_MS = 15_000;
-export const DAILY_FALLBACK_INTERVAL_MS = 60 * 60 * 1000;
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -12,34 +11,50 @@ export function normalizeUnixTimestamp(value) {
   return timestamp > 1_000_000_000_000 ? Math.floor(timestamp / 1000) : Math.floor(timestamp);
 }
 
-export function formatRateDate(unixTimestamp) {
+export function formatRateDate(unixTimestamp, { includeTime = true } = {}) {
   if (!unixTimestamp) return null;
 
   const date = new Date(Number(unixTimestamp) * 1000);
   if (Number.isNaN(date.getTime())) return null;
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short"
-  }).format(date);
+  const options = { dateStyle: "short" };
+  if (includeTime) options.timeStyle = "short";
+
+  return new Intl.DateTimeFormat("pt-BR", options).format(date);
+}
+
+export function normalizeIsoDateTimestamp(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? ""));
+  if (!match) return null;
+
+  const [, year, month, day] = match.map(Number);
+  const milliseconds = Date.UTC(year, month - 1, day, 12);
+  const date = new Date(milliseconds);
+
+  if (
+    date.getUTCFullYear() !== year
+    || date.getUTCMonth() !== month - 1
+    || date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return Math.floor(milliseconds / 1000);
 }
 
 export class RateService {
   constructor({
     fetchImpl = globalThis.fetch?.bind(globalThis),
-    now = () => Date.now(),
-    realtimeUrl = REALTIME_RATE_API_URL,
-    dailyUrl = DAILY_RATE_API_URL
+    primaryUrl = PRIMARY_RATE_API_URL,
+    fallbackUrl = FALLBACK_RATE_API_URL
   } = {}) {
     if (typeof fetchImpl !== "function") {
       throw new TypeError("Uma implementação de fetch é obrigatória.");
     }
 
     this.fetchImpl = fetchImpl;
-    this.now = now;
-    this.realtimeUrl = realtimeUrl;
-    this.dailyUrl = dailyUrl;
-    this.lastDailyFallbackAttempt = 0;
+    this.primaryUrl = primaryUrl;
+    this.fallbackUrl = fallbackUrl;
   }
 
   async fetchJson(url) {
@@ -55,51 +70,28 @@ export class RateService {
     }
   }
 
-  async fetchRealtimeRate() {
-    const data = await this.fetchJson(this.realtimeUrl);
-    const quote = data?.CLPBRL ?? Object.values(data ?? {}).find(item => item?.code === "CLP" && item?.codein === "BRL");
-    const bid = Number(quote?.bid);
-    const ask = Number(quote?.ask);
+  async fetchDailyRate(url) {
+    const data = await this.fetchJson(url);
+    const rate = Number(data?.clp?.brl);
+    const sourceUpdatedAt = normalizeIsoDateTimestamp(data?.date);
 
-    if (!Number.isFinite(bid) || bid <= 0 || !Number.isFinite(ask) || ask <= 0) {
-      throw new Error("Cotação intradiária indisponível");
-    }
-
-    return {
-      rate: (bid + ask) / 2,
-      sourceUpdatedAt: normalizeUnixTimestamp(quote.timestamp),
-      sourceKind: "realtime",
-      sourceName: "AwesomeAPI"
-    };
-  }
-
-  async fetchDailyRate() {
-    const data = await this.fetchJson(this.dailyUrl);
-    const rate = Number(data?.rates?.BRL);
-
-    if (data?.result !== "success" || data?.base_code !== "CLP" || !Number.isFinite(rate) || rate <= 0) {
+    if (!sourceUpdatedAt || !Number.isFinite(rate) || rate <= 0) {
       throw new Error("Cotação diária indisponível");
     }
 
     return {
       rate,
-      sourceUpdatedAt: normalizeUnixTimestamp(data.time_last_update_unix),
+      sourceUpdatedAt,
       sourceKind: "daily",
-      sourceName: "ExchangeRate-API"
+      sourceName: "Currency API"
     };
   }
 
-  async fetchBestAvailableRate({ forceDailyFallback = false } = {}) {
+  async fetchBestAvailableRate() {
     try {
-      return await this.fetchRealtimeRate();
-    } catch (realtimeError) {
-      const canTryDaily = forceDailyFallback
-        || this.now() - this.lastDailyFallbackAttempt >= DAILY_FALLBACK_INTERVAL_MS;
-
-      if (!canTryDaily) throw realtimeError;
-
-      this.lastDailyFallbackAttempt = this.now();
-      return await this.fetchDailyRate();
+      return await this.fetchDailyRate(this.primaryUrl);
+    } catch {
+      return this.fetchDailyRate(this.fallbackUrl);
     }
   }
 }

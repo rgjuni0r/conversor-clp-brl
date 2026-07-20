@@ -19,7 +19,7 @@ const rateFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
   minimumFractionDigits: 5,
-  maximumFractionDigits: 7
+  maximumFractionDigits: 10
 });
 
 function assertDirection(direction) {
@@ -48,14 +48,41 @@ function assertSafeInteger(value, name) {
   return numericValue;
 }
 
-function toNonNegativeSafeInteger(value, name) {
-  const roundedValue = Math.round(value);
+function toDecimalFraction(value, name) {
+  const match = /^(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/i.exec(String(value));
+  if (!match) throw new TypeError(`${name} deve ser um número decimal não negativo.`);
 
-  if (roundedValue < 0 || !Number.isSafeInteger(roundedValue)) {
+  const fractionDigits = match[2] ?? "";
+  const exponent = Number(match[3] ?? 0);
+  const digits = `${match[1]}${fractionDigits}`.replace(/^0+(?=\d)/, "");
+  let numerator = BigInt(digits);
+  const scale = fractionDigits.length - exponent;
+
+  if (scale <= 0) {
+    numerator *= 10n ** BigInt(-scale);
+    return { numerator, denominator: 1n };
+  }
+
+  return { numerator, denominator: 10n ** BigInt(scale) };
+}
+
+function roundFractionToSafeInteger(numerator, denominator, name) {
+  if (numerator < 0n || denominator <= 0n) {
     throw new RangeError(`${name} está fora do intervalo monetário suportado.`);
   }
 
-  return roundedValue;
+  const roundedValue = (numerator * 2n + denominator) / (denominator * 2n);
+
+  if (roundedValue > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError(`${name} está fora do intervalo monetário suportado.`);
+  }
+
+  return Number(roundedValue);
+}
+
+function toNonNegativeSafeInteger(value, name) {
+  const { numerator, denominator } = toDecimalFraction(value, name);
+  return roundFractionToSafeInteger(numerator, denominator, name);
 }
 
 function groupThousands(value) {
@@ -70,12 +97,19 @@ function formatClpInput(value) {
 
 function formatBrlInput(value, allowDecimalPoint) {
   const clean = String(value ?? "").replace(/[^\d.,]/g, "");
-  let decimalIndex = clean.lastIndexOf(",");
+  const lastComma = clean.lastIndexOf(",");
+  const lastPoint = clean.lastIndexOf(".");
+  const pointFractionLength = lastPoint === -1 ? 0 : clean.length - lastPoint - 1;
+  let decimalIndex = lastComma;
 
-  // Um ponto só é decimal quando o evento de digitação o identifica como tal.
-  // Os demais pontos continuam representando agrupadores de milhares.
-  if (decimalIndex === -1 && allowDecimalPoint) {
-    decimalIndex = clean.lastIndexOf(".");
+  // Com os dois separadores, o último representa os centavos. Um ponto isolado
+  // também é decimal quando acabou de ser digitado ou possui até duas casas,
+  // permitindo colar valores como 10.50 sem confundir 1.000 com R$ 1,00.
+  if (
+    lastPoint > lastComma
+    && (lastComma !== -1 || allowDecimalPoint || pointFractionLength <= 2)
+  ) {
+    decimalIndex = lastPoint;
   }
 
   const hasDecimal = decimalIndex !== -1;
@@ -147,7 +181,12 @@ export function convertAmount(amount, direction, rate) {
 
   if (direction === DIRECTIONS.CLP_TO_BRL) {
     const clpPesos = toNonNegativeSafeInteger(numericAmount, "Valor em CLP");
-    const brlCents = toNonNegativeSafeInteger(clpPesos * numericRate * 100, "Valor em BRL");
+    const rateFraction = toDecimalFraction(numericRate, "Cotação");
+    const brlCents = roundFractionToSafeInteger(
+      BigInt(clpPesos) * rateFraction.numerator * 100n,
+      rateFraction.denominator,
+      "Valor em BRL"
+    );
 
     return {
       clpPesos,
@@ -157,9 +196,19 @@ export function convertAmount(amount, direction, rate) {
     };
   }
 
-  const brlCents = toNonNegativeSafeInteger(numericAmount * 100, "Valor em BRL");
+  const amountFraction = toDecimalFraction(numericAmount, "Valor em BRL");
+  const brlCents = roundFractionToSafeInteger(
+    amountFraction.numerator * 100n,
+    amountFraction.denominator,
+    "Valor em BRL"
+  );
   const sourceAmount = brlCents / 100;
-  const clpPesos = toNonNegativeSafeInteger(sourceAmount / numericRate, "Valor em CLP");
+  const rateFraction = toDecimalFraction(numericRate, "Cotação");
+  const clpPesos = roundFractionToSafeInteger(
+    BigInt(brlCents) * rateFraction.denominator,
+    100n * rateFraction.numerator,
+    "Valor em CLP"
+  );
 
   return {
     clpPesos,

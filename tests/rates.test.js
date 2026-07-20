@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  DAILY_FALLBACK_INTERVAL_MS,
   RateService,
+  normalizeIsoDateTimestamp,
   normalizeUnixTimestamp
 } from "../js/rates.js";
 
@@ -23,43 +23,50 @@ test("normaliza timestamps em segundos e milissegundos", () => {
   assert.equal(normalizeUnixTimestamp("inválido"), null);
 });
 
-test("usa a média exata entre compra e venda da fonte intradiária", async () => {
+test("normaliza a data diária sem deslocar o dia da referência", () => {
+  assert.equal(
+    normalizeIsoDateTimestamp("2026-07-19"),
+    Math.floor(Date.UTC(2026, 6, 19, 12) / 1000)
+  );
+  assert.equal(normalizeIsoDateTimestamp("2026-02-30"), null);
+  assert.equal(normalizeIsoDateTimestamp("19/07/2026"), null);
+});
+
+test("usa a taxa CLP para BRL da fonte diária principal", async () => {
   const calls = [];
   const service = new RateService({
+    primaryUrl: "https://primary.test/clp.json",
+    fallbackUrl: "https://fallback.test/clp.json",
     fetchImpl: async url => {
       calls.push(url);
       return response({
-        CLPBRL: {
-          code: "CLP",
-          codein: "BRL",
-          bid: "0.0054",
-          ask: "0.0056",
-          timestamp: "1784421000"
-        }
+        date: "2026-07-19",
+        clp: { brl: 0.00548754 }
       });
     }
   });
 
   const quote = await service.fetchBestAvailableRate();
 
-  assert.equal(quote.rate, 0.0055);
-  assert.equal(quote.sourceKind, "realtime");
-  assert.equal(quote.sourceName, "AwesomeAPI");
-  assert.equal(quote.sourceUpdatedAt, 1_784_421_000);
+  assert.equal(quote.rate, 0.00548754);
+  assert.equal(quote.sourceKind, "daily");
+  assert.equal(quote.sourceName, "Currency API");
+  assert.equal(quote.sourceUpdatedAt, Math.floor(Date.UTC(2026, 6, 19, 12) / 1000));
+  assert.equal(calls[0], "https://primary.test/clp.json");
   assert.equal(calls.length, 1);
 });
 
-test("usa a referência diária quando a fonte intradiária falha", async () => {
+test("usa o espelho quando a fonte diária principal falha", async () => {
   const calls = [];
   const service = new RateService({
+    primaryUrl: "https://primary.test/clp.json",
+    fallbackUrl: "https://fallback.test/clp.json",
     fetchImpl: async url => {
       calls.push(url);
-      if (url.includes("awesomeapi")) return response({}, { ok: false, status: 429 });
+      if (url.includes("primary")) return response({}, { ok: false, status: 503 });
       return response({
-        result: "success",
-        base_code: "CLP",
-        rates: { BRL: 0.005507 },
-        time_last_update_unix: 1_784_419_351
+        date: "2026-07-19",
+        clp: { brl: "0.005507" }
       });
     }
   });
@@ -68,34 +75,20 @@ test("usa a referência diária quando a fonte intradiária falha", async () => 
 
   assert.equal(quote.rate, 0.005507);
   assert.equal(quote.sourceKind, "daily");
-  assert.equal(quote.sourceName, "ExchangeRate-API");
+  assert.equal(quote.sourceName, "Currency API");
+  assert.deepEqual(calls, [
+    "https://primary.test/clp.json",
+    "https://fallback.test/clp.json"
+  ]);
   assert.equal(calls.length, 2);
 });
 
-test("não repete a contingência diária dentro do intervalo automático", async () => {
-  let now = DAILY_FALLBACK_INTERVAL_MS + 1;
-  let dailyCalls = 0;
+test("rejeita respostas inválidas nas duas fontes", async () => {
   const service = new RateService({
-    now: () => now,
-    fetchImpl: async url => {
-      if (url.includes("awesomeapi")) return response({}, { ok: false, status: 503 });
-      dailyCalls += 1;
-      return response({
-        result: "success",
-        base_code: "CLP",
-        rates: { BRL: 0.0055 },
-        time_last_update_unix: 1_784_419_351
-      });
-    }
+    primaryUrl: "primary",
+    fallbackUrl: "fallback",
+    fetchImpl: async () => response({ date: "inválida", clp: { brl: 0 } })
   });
 
-  await service.fetchBestAvailableRate();
-  now += 60_000;
-
-  await assert.rejects(() => service.fetchBestAvailableRate(), /Falha na consulta/);
-  assert.equal(dailyCalls, 1);
-
-  now += DAILY_FALLBACK_INTERVAL_MS;
-  await service.fetchBestAvailableRate();
-  assert.equal(dailyCalls, 2);
+  await assert.rejects(() => service.fetchBestAvailableRate(), /Cotação diária indisponível/);
 });
