@@ -4,6 +4,7 @@ export const SESSION_SCHEMA_VERSION = 1;
 export const SESSION_STORAGE_KEY = "clpBrlSessionV1";
 
 const MAX_LABEL_LENGTH = 60;
+const MAX_PLACE_LENGTH = 80;
 const MAX_PEOPLE_COUNT = 99;
 const VALID_STATUSES = new Set(["open", "closed"]);
 const VALID_RATE_KINDS = new Set(["realtime", "daily", "manual", "cached", "default"]);
@@ -44,14 +45,22 @@ function normalizeId(value, prefix) {
   return normalized && normalized.length <= 128 ? normalized : makeId(prefix);
 }
 
-function normalizeLabel(value) {
+function normalizeText(value, maxLength) {
   if (value === null || value === undefined) return "";
 
   return String(value)
     .replace(/[\u0000-\u001f\u007f]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, MAX_LABEL_LENGTH);
+    .slice(0, maxLength);
+}
+
+function normalizeLabel(value) {
+  return normalizeText(value, MAX_LABEL_LENGTH);
+}
+
+function normalizePlace(value) {
+  return normalizeText(value, MAX_PLACE_LENGTH);
 }
 
 function normalizeDirection(value) {
@@ -166,6 +175,7 @@ function sanitizeSession(value) {
 
   const timestamp = nowIso();
   const createdAt = normalizeTimestamp(value.createdAt, timestamp);
+  let placeName = normalizePlace(value.placeName);
   const items = [];
   let totalClpPesos = 0;
   let totalBrlCents = 0;
@@ -174,6 +184,9 @@ function sanitizeSession(value) {
     for (const payload of value.items) {
       const item = buildItem(payload, { preserveMetadata: true });
       if (!item) continue;
+
+      // Migra a curta versão que armazenava o lugar em cada item.
+      if (!placeName) placeName = normalizePlace(payload.place);
 
       const nextClpTotal = totalClpPesos + item.clpPesos;
       const nextBrlTotal = totalBrlCents + item.brlCents;
@@ -191,6 +204,7 @@ function sanitizeSession(value) {
     status: VALID_STATUSES.has(value.status) ? value.status : "open",
     createdAt,
     updatedAt: normalizeTimestamp(value.updatedAt, createdAt),
+    placeName,
     peopleCount: normalizePeopleCount(value.peopleCount),
     items
   };
@@ -213,6 +227,7 @@ export function createSession() {
     status: "open",
     createdAt: timestamp,
     updatedAt: timestamp,
+    placeName: "",
     peopleCount: 1,
     items: []
   };
@@ -263,6 +278,27 @@ export function createItem(payload) {
   }
 
   return item;
+}
+
+export function updateItem(item, changes = {}) {
+  if (!isRecord(item) || !isRecord(changes)) {
+    throw new TypeError("Item e alterações devem ser objetos válidos.");
+  }
+
+  const updatedAt = nowIso();
+  const updatedItem = buildItem({
+    ...item,
+    ...changes,
+    id: item.id,
+    createdAt: item.createdAt,
+    updatedAt
+  }, { preserveMetadata: true });
+
+  if (!updatedItem) {
+    throw new TypeError("As alterações produziram um item inválido.");
+  }
+
+  return updatedItem;
 }
 
 export function calculateTotals(items) {

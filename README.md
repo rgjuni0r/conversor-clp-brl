@@ -50,10 +50,12 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Espelho independente de contingência quando o CDN principal não responde.
 - Persistência da última cotação válida no navegador.
 - Ajuste manual da taxa de conversão.
+- Contexto único da conta com o nome do lugar, definido uma vez, salvo automaticamente e recolhido para o resumo após a confirmação.
 - Inclusão de conversões em um resumo com descrição opcional.
+- Edição de descrição e valor com preservação da cotação originalmente registrada.
 - Registro da cotação e da origem usada em cada item.
 - Soma dos gastos em CLP e BRL usando unidades monetárias inteiras.
-- Exclusão individual ou limpeza completa do resumo.
+- Exclusão individual com confirmação personalizada ou limpeza completa do resumo.
 - Confirmações destrutivas personalizadas, sem alertas nativos do navegador.
 - Divisão exata entre 1 e 99 pessoas, incluindo o tratamento do resíduo.
 - Recibo final com total, quantidade de pessoas e valor individual.
@@ -63,7 +65,9 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Instalação como PWA no iPhone, Android e navegadores compatíveis.
 - Layout responsivo com suporte às áreas seguras do iPhone.
 - Identidade visual inspirada na Cordilheira dos Andes, com neve animada em profundidade e movimento acessível.
-- Efeito de globo de neve no mobile, intensificado temporariamente ao agitar o aparelho.
+- Efeito de globo de neve no mobile com tremor visual progressivo e explosão sincronizada.
+- Pulsos táteis crescentes e vibração de impacto em navegadores móveis compatíveis.
+- Retomada automática do sensor após a primeira autorização, sem solicitações repetidas pelo app.
 - Resumo em accordion na versão mobile, preservando a visualização completa no desktop.
 
 ## Arquitetura
@@ -77,7 +81,7 @@ flowchart TD
     APP --> MONEY[js/money.js<br/>máscaras, inteiros e divisão]
     APP --> SESSION[js/session-store.js<br/>sessão versionada]
     APP --> RATES[js/rates.js<br/>fontes e fallback]
-    APP --> MOTION[js/snow-motion.js<br/>detecção local de shake]
+    APP --> MOTION[js/snow-motion.js<br/>shake, progressão e padrões táteis]
     RATES --> PRIMARY[jsDelivr<br/>referência diária CC0]
     PRIMARY -->|sucesso| STORE[localStorage]
     PRIMARY -->|falha| FALLBACK[Cloudflare Pages<br/>espelho da mesma base]
@@ -98,11 +102,11 @@ flowchart TD
 | `js/money.js` | Máscaras, formatação, conversões e divisão em unidades inteiras. |
 | `js/rates.js` | Consulta cambial, timeout, validação da resposta e espelho de contingência. |
 | `js/session-store.js` | Modelo versionado, validação e persistência da conta. |
-| `js/snow-motion.js` | Detecção de shake, limiar, janela de impulsos e cooldown. |
+| `js/snow-motion.js` | Detecção de shake, progressão por impulsos distintos, rearme, cooldown e padrões táteis. |
 | `sw.js` | Cache dos arquivos locais e funcionamento offline do shell. |
 | `manifest.json` | Nome, ícones, cores e comportamento de instalação do PWA. |
 | `tests/` | Testes automatizados de moeda, sessão, divisão, fontes cambiais e movimento. |
-| `localStorage` | Última taxa válida e sessão atual da conta. |
+| `localStorage` | Última taxa válida, sessão atual e preferência de ativação do movimento. |
 
 ### Estratégia de resiliência
 
@@ -249,7 +253,8 @@ A suíte cobre:
 - criação, persistência e recuperação de sessões;
 - descarte seguro de dados corrompidos;
 - validação da cotação diária e fallback entre os dois espelhos.
-- detecção de shake, cooldown e fallback de aceleração com gravidade.
+- detecção de shake moderado, progressão, rearme, intervalo mínimo, cooldown e fallback amplificado com gravidade;
+- padrões crescentes de vibração e pulso final do efeito de neve.
 
 ## Instalação como aplicativo
 
@@ -261,13 +266,17 @@ A suíte cobre:
 4. Selecione **Adicionar à Tela de Início**.
 5. Confirme em **Adicionar**.
 
-Na primeira interação, o iOS pode solicitar acesso aos sensores de movimento. Ao permitir, agitar o aparelho intensifica a neve por alguns segundos. O efeito permanece desativado quando a preferência **Reduzir Movimento** está ativa.
+Na primeira interação, o iOS pode solicitar acesso aos sensores de movimento. Depois de autorizado, o app salva essa preferência, reanexa o sensor automaticamente nos próximos acessos e consulta a autorização já existente sem abrir outro diálogo. Uma nova solicitação só pode ocorrer se o próprio navegador ou sistema tiver perdido ou revogado a permissão. O efeito também permanece ativo em modo paisagem e fica desativado quando a preferência **Reduzir Movimento** está ativa.
+
+Ao permitir, agitar o aparelho produz um tremor visual crescente e intensifica a neve por alguns segundos. O Safari/WebKit ainda não oferece a Vibration API; por isso, no iPhone e no iPad o impacto é visual, sem vibração física.
 
 ### Android
 
 1. Abra o endereço no Chrome.
 2. Acesse o menu do navegador.
 3. Selecione **Instalar app** ou **Adicionar à tela inicial**.
+
+No Chrome e em outros navegadores Chromium compatíveis, cada impulso gera uma resposta tátil crescente e o estouro termina com um padrão mais forte. O navegador pode exigir uma interação prévia com a tela e as configurações do aparelho ainda podem silenciar a vibração.
 
 ## Publicação no GitHub Pages
 
@@ -322,6 +331,7 @@ As principais configurações estão declaradas em `js/rates.js`:
 | --- | --- |
 | `clpBrlRateV2` | Snapshot atômico da última taxa válida, tipo da fonte e data de referência. |
 | `clpBrlSessionV1` | Sessão versionada com itens, pessoas, taxas registradas e status. |
+| `clpBrlMotionPermissionV1` | Preferência local indicando que o usuário já ativou o efeito por movimento; a permissão real continua sob controle do navegador. |
 
 Nenhuma informação pessoal é armazenada.
 
@@ -331,7 +341,7 @@ Ao publicar uma alteração em `index.html`, `style.css`, `app.js`, ícones ou m
 
 ```js
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v27`;
+const CACHE = `${CACHE_PREFIX}v34`;
 ```
 
 Esse versionamento força a remoção do cache anterior durante a ativação do novo Service Worker.
@@ -349,13 +359,16 @@ Esse versionamento força a remoção do cache anterior durante a ativação do 
 - Testar o carregamento offline após o primeiro acesso.
 - Verificar instalação e ícones do PWA.
 - Incrementar a versão do cache.
-- Testar em Safari no iPhone e Chrome no Android.
+- Testar o tremor visual no Safari do iPhone, inclusive em paisagem, e o feedback tátil no Chrome do Android.
+- Reabrir o PWA após autorizar o movimento e confirmar que o app não solicita novamente enquanto a permissão do navegador continua válida.
 
 ## Privacidade e segurança
 
 - A aplicação não possui cadastro, cookies próprios ou coleta de dados pessoais.
 - Os valores digitados, a taxa e a sessão da conta permanecem no navegador do usuário.
 - Os dados do sensor de movimento são processados apenas em memória e nunca são armazenados ou enviados.
+- O app armazena somente que o efeito já foi ativado; a autorização real do sensor pertence ao navegador e ao sistema operacional.
+- O feedback tátil usa apenas padrões locais de duração e não coleta informações do aparelho.
 - As consultas cambiais são enviadas diretamente às APIs identificadas neste documento.
 - Não existem chaves privadas ou segredos incorporados ao código.
 - Em produção, o PWA deve ser servido exclusivamente por HTTPS.
@@ -373,6 +386,8 @@ Como o projeto é totalmente client-side, qualquer segredo incluído no JavaScri
 - A aplicação não apresenta histórico ou gráfico de variação cambial.
 - Itens já registrados preservam a cotação original e não são recalculados automaticamente.
 - O efeito de shake depende de suporte e permissão para `DeviceMotion`; sem isso, a neve ambiente continua normalmente.
+- Se o navegador apagar ou revogar a permissão de movimento, uma nova confirmação do sistema será inevitável no próximo gesto do usuário.
+- A vibração física usa `navigator.vibrate()` e atualmente fica restrita, na prática, a navegadores baseados em Chromium; o iPhone mantém o feedback visual.
 
 ## Roadmap
 

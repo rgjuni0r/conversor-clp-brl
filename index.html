@@ -87,6 +87,20 @@
     <p>Organize os gastos da viagem e feche a conta sem complicação.</p>
   </header>
 
+  <section id="tripContext" class="trip-context" aria-labelledby="tripPlaceTitle">
+    <span class="trip-context-icon" aria-hidden="true">⌖</span>
+    <div class="trip-context-copy">
+      <span class="step-label">CONTEXTO DA CONTA</span>
+      <strong id="tripPlaceTitle">Onde é esta viagem?</strong>
+      <small>Defina uma vez e use em todo o fluxo.</small>
+    </div>
+    <label class="trip-place-field" for="tripPlace">
+      <span>Nome do lugar</span>
+      <input id="tripPlace" type="text" maxlength="80" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="Ex.: Santiago, Chile" />
+      <small id="tripPlaceStatus" aria-live="polite">Será usado em toda esta conta.</small>
+    </label>
+  </section>
+
   <main class="app-shell">
     <section class="surface converter-card" aria-labelledby="converterTitle">
       <div class="section-heading">
@@ -167,6 +181,12 @@
         <button id="clearSummaryButton" class="text-button" type="button" disabled>Limpar</button>
       </div>
 
+      <div id="summaryPlace" class="summary-place" hidden>
+        <span aria-hidden="true">⌖</span>
+        <strong id="summaryPlaceName"></strong>
+        <button id="editTripPlaceButton" class="edit-place-button" type="button">Editar</button>
+      </div>
+
       <div id="summaryPanel" class="summary-panel">
         <div id="emptyState" class="empty-state">
           <div class="empty-illustration" aria-hidden="true">
@@ -236,6 +256,41 @@
     <p>&copy; 2026 abc Ensina. Todos os direitos reservados.</p>
   </footer>
 
+  <dialog id="editItemDialog" class="edit-item-dialog" aria-labelledby="editItemTitle">
+    <form id="editItemForm" class="edit-item-sheet" novalidate>
+      <button id="closeEditItemButton" class="dialog-close" type="button" aria-label="Fechar edição">×</button>
+
+      <span class="step-label">EDITAR GASTO</span>
+      <h2 id="editItemTitle">Ajustar item</h2>
+      <p>Altere a descrição ou o valor. A cotação registrada será preservada.</p>
+
+      <label class="edit-item-field" for="editItemLabel">
+        <span>O que foi? <small>Opcional</small></span>
+        <input id="editItemLabel" type="text" maxlength="60" autocomplete="off" placeholder="Ex.: jantar, metrô, passeio…" />
+      </label>
+
+      <label class="edit-item-field" for="editItemAmount">
+        <span id="editItemAmountLabel">Valor em pesos chilenos</span>
+        <span class="edit-amount-wrap">
+          <b id="editItemInputSymbol">$</b>
+          <input id="editItemAmount" type="text" inputmode="decimal" autocomplete="off" />
+          <em id="editItemInputCode">CLP</em>
+        </span>
+      </label>
+
+      <div class="edit-item-preview" aria-live="polite">
+        <span id="editItemResultLabel">Resultado em reais</span>
+        <strong id="editItemResult">R$ 0,00</strong>
+        <small id="editItemRate">Cotação original</small>
+      </div>
+
+      <div class="edit-item-actions">
+        <button id="cancelEditItemButton" class="cancel-button" type="button">Cancelar</button>
+        <button id="saveEditItemButton" class="save-edit-button" type="submit">Salvar alterações</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
     <div class="confirm-sheet">
       <div class="confirm-icon" aria-hidden="true">!</div>
@@ -259,6 +314,10 @@
       <span class="step-label">CONTA FECHADA</span>
       <h2 id="receiptTitle">Pronto para dividir.</h2>
       <p id="receiptSubtitle">Resumo da conta de viagem</p>
+      <p id="receiptPlace" class="receipt-place" hidden>
+        <span aria-hidden="true">⌖</span>
+        <strong id="receiptPlaceName"></strong>
+      </p>
 
       <div class="receipt-total">
         <span>Total</span>

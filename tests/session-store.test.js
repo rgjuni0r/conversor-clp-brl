@@ -11,7 +11,8 @@ import {
   createSession,
   loadSession,
   normalizePeopleCount,
-  saveSession
+  saveSession,
+  updateItem
 } from "../js/session-store.js";
 
 class MemoryStorage {
@@ -52,6 +53,7 @@ test("cria uma sessão versionada e vazia", () => {
   assert.equal(session.schemaVersion, SESSION_SCHEMA_VERSION);
   assert.match(session.id, /^session_/);
   assert.equal(session.status, "open");
+  assert.equal(session.placeName, "");
   assert.equal(session.peopleCount, 1);
   assert.deepEqual(session.items, []);
   assert.ok(!Number.isNaN(Date.parse(session.createdAt)));
@@ -82,6 +84,49 @@ test("preserva rótulos como texto sem produzir marcação", () => {
   assert.equal(item.label, "<strong>Jantar</strong>");
 });
 
+test("edita um item preservando identidade, cotação e data de criação", () => {
+  const original = validItem();
+  const updated = updateItem(original, {
+    label: "Jantar",
+    clpPesos: 12000,
+    brlCents: 6600
+  });
+
+  assert.equal(updated.id, original.id);
+  assert.equal(updated.createdAt, original.createdAt);
+  assert.equal(updated.rateClpToBrl, original.rateClpToBrl);
+  assert.equal(updated.rateSource, original.rateSource);
+  assert.equal(updated.label, "Jantar");
+  assert.equal(updated.clpPesos, 12000);
+  assert.equal(updated.brlCents, 6600);
+  assert.ok(!Number.isNaN(Date.parse(updated.updatedAt)));
+});
+
+test("normaliza o lugar no nível da conta", () => {
+  const storage = new MemoryStorage();
+  const session = createSession();
+  session.placeName = `  Cerro\n${"x".repeat(100)}  `;
+
+  const saved = saveSession(session, storage);
+
+  assert.equal(saved.placeName.includes("\n"), false);
+  assert.equal(saved.placeName.length, 80);
+});
+
+test("migra o lugar de um item antigo para o contexto único da conta", () => {
+  const storage = new MemoryStorage();
+  const session = createSession();
+  const legacyItem = validItem();
+  legacyItem.place = "Patio Bellavista";
+  session.items.push(legacyItem);
+  storage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+
+  const loaded = loadSession(storage);
+
+  assert.equal(loaded.placeName, "Patio Bellavista");
+  assert.equal(Object.hasOwn(loaded.items[0], "place"), false);
+});
+
 test("soma somente itens com unidades monetárias válidas", () => {
   const first = validItem();
   const second = validItem({
@@ -108,6 +153,7 @@ test("normaliza a quantidade de pessoas dentro do limite do app", () => {
 test("salva e restaura uma sessão no localStorage informado", () => {
   const storage = new MemoryStorage();
   const session = createSession();
+  session.placeName = "Santiago, Chile";
   session.peopleCount = 3;
   session.items.push(validItem());
 
@@ -116,6 +162,7 @@ test("salva e restaura uma sessão no localStorage informado", () => {
 
   assert.equal(saved.peopleCount, 3);
   assert.equal(loaded.id, session.id);
+  assert.equal(loaded.placeName, "Santiago, Chile");
   assert.equal(loaded.peopleCount, 3);
   assert.equal(loaded.items.length, 1);
   assert.equal(loaded.items[0].label, "Almoço");

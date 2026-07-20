@@ -16,7 +16,8 @@ import {
   createSession,
   loadSession,
   normalizePeopleCount,
-  saveSession
+  saveSession,
+  updateItem
 } from "./js/session-store.js";
 import {
   AUTOMATIC_REQUEST_DEBOUNCE_MS,
@@ -24,7 +25,10 @@ import {
   RateService,
   formatRateDate
 } from "./js/rates.js";
-import { ShakeDetector } from "./js/snow-motion.js";
+import {
+  ShakeDetector,
+  getSnowGlobeVibrationPattern
+} from "./js/snow-motion.js";
 
 const $ = id => document.getElementById(id);
 
@@ -43,6 +47,9 @@ const elements = {
   inputSymbol: $("inputSymbol"),
   inputCode: $("inputCode"),
   conversionForm: $("conversionForm"),
+  tripContext: $("tripContext"),
+  tripPlace: $("tripPlace"),
+  tripPlaceStatus: $("tripPlaceStatus"),
   itemLabel: $("itemLabel"),
   addItemButton: $("addItemButton"),
   entryCount: $("entryCount"),
@@ -51,6 +58,9 @@ const elements = {
   clearSummaryButton: $("clearSummaryButton"),
   emptyState: $("emptyState"),
   summaryContent: $("summaryContent"),
+  summaryPlace: $("summaryPlace"),
+  summaryPlaceName: $("summaryPlaceName"),
+  editTripPlaceButton: $("editTripPlaceButton"),
   itemsList: $("itemsList"),
   totalBrl: $("totalBrl"),
   totalClp: $("totalClp"),
@@ -67,8 +77,23 @@ const elements = {
   mobileTotalBrl: $("mobileTotalBrl"),
   mobileTotalClp: $("mobileTotalClp"),
   summaryCard: $("summaryCard"),
+  editItemDialog: $("editItemDialog"),
+  editItemForm: $("editItemForm"),
+  editItemLabel: $("editItemLabel"),
+  editItemAmount: $("editItemAmount"),
+  editItemAmountLabel: $("editItemAmountLabel"),
+  editItemInputSymbol: $("editItemInputSymbol"),
+  editItemInputCode: $("editItemInputCode"),
+  editItemResultLabel: $("editItemResultLabel"),
+  editItemResult: $("editItemResult"),
+  editItemRate: $("editItemRate"),
+  closeEditItemButton: $("closeEditItemButton"),
+  cancelEditItemButton: $("cancelEditItemButton"),
+  saveEditItemButton: $("saveEditItemButton"),
   receiptDialog: $("receiptDialog"),
   receiptSubtitle: $("receiptSubtitle"),
+  receiptPlace: $("receiptPlace"),
+  receiptPlaceName: $("receiptPlaceName"),
   receiptTotalBrl: $("receiptTotalBrl"),
   receiptTotalClp: $("receiptTotalClp"),
   receiptPeople: $("receiptPeople"),
@@ -113,17 +138,39 @@ const RATE_SOURCE_NAMES = Object.freeze({
   default: "Referência inicial"
 });
 const RATE_STORAGE_KEY = "clpBrlRateV2";
+const MOTION_PERMISSION_STORAGE_KEY = "clpBrlMotionPermissionV1";
 
 const rateService = new RateService();
 const mobileSummaryAccordion = window.matchMedia("(max-width: 820px)");
+const mobileMotionPointer = window.matchMedia("(any-pointer: coarse) and (max-width: 1024px)");
 const reducedMotionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-const shakeDetector = new ShakeDetector();
+const SHAKE_THRESHOLD = 8.2;
+const SHAKE_HITS_REQUIRED = 4;
+const SHAKE_HIT_WINDOW_MS = 1_700;
+const shakeDetector = new ShakeDetector({
+  threshold: SHAKE_THRESHOLD,
+  hitsRequired: SHAKE_HITS_REQUIRED,
+  hitWindowMs: SHAKE_HIT_WINDOW_MS,
+  minHitIntervalMs: 100,
+  rearmThreshold: 6,
+  gravityDeltaScale: 2.4
+});
 const SNOW_GLOBE_DURATION_MS = 7_000;
+const SNOW_GLOBE_BOOM_DURATION_MS = 480;
+const SNOW_GLOBE_CHARGE_CLASSES = Object.freeze([
+  "snow-globe-charge-1",
+  "snow-globe-charge-2",
+  "snow-globe-charge-3"
+]);
 const snowMotionState = {
   isListening: false,
   permissionStatus: "unknown",
   permissionGestureArmed: false,
-  effectTimer: null
+  permissionRequest: null,
+  permissionRemembered: readStoredText(MOTION_PERMISSION_STORAGE_KEY) === "granted",
+  effectTimer: null,
+  chargeTimer: null,
+  boomTimer: null
 };
 const storedRate = readStoredRateSnapshot();
 
@@ -137,6 +184,10 @@ const state = {
   isUpdatingRate: false,
   lastAutomaticRateAttempt: 0,
   decimalPointTyped: false,
+  editDecimalPointTyped: false,
+  editingItemId: null,
+  isEditingPlace: false,
+  placeWasPersisted: true,
   toastTimer: null,
   confirmationResolver: null,
   isMobileSummaryExpanded: false
@@ -301,15 +352,44 @@ function renderItems() {
     ));
     row.append(main);
 
+    const actions = document.createElement("div");
+    actions.className = "item-actions";
+
+    const editButton = createTextElement("button", "edit-item", "✎");
+    editButton.type = "button";
+    editButton.dataset.editItemId = item.id;
+    editButton.setAttribute("aria-label", `Editar ${item.label || `item ${index + 1}`}`);
+
     const removeButton = createTextElement("button", "remove-item", "×");
     removeButton.type = "button";
-    removeButton.dataset.itemId = item.id;
+    removeButton.dataset.removeItemId = item.id;
     removeButton.setAttribute("aria-label", `Remover ${item.label || `item ${index + 1}`}`);
-    row.append(removeButton);
+    actions.append(editButton, removeButton);
+    row.append(actions);
     fragment.append(row);
   });
 
   elements.itemsList.replaceChildren(fragment);
+}
+
+function renderTripPlace({ syncInput = true } = {}) {
+  const placeName = session.placeName || "";
+  const hasPlace = Boolean(placeName);
+  const shouldShowEditor = !hasPlace || state.isEditingPlace;
+
+  if (syncInput && document.activeElement !== elements.tripPlace) {
+    elements.tripPlace.value = placeName;
+  }
+
+  elements.tripContext.hidden = !shouldShowEditor;
+  elements.tripPlaceStatus.textContent = hasPlace
+    ? "Salvo automaticamente nesta conta."
+    : "Será usado em toda esta conta.";
+  elements.summaryPlace.hidden = !hasPlace;
+  elements.summaryPlaceName.textContent = placeName;
+  elements.summaryCard.classList.toggle("has-trip-place", hasPlace);
+  elements.receiptPlace.hidden = !hasPlace;
+  elements.receiptPlaceName.textContent = placeName;
 }
 
 function getSplitSummary(totals = calculateTotals(session.items)) {
@@ -396,10 +476,12 @@ function renderReceipt() {
   elements.receiptPerPersonClp.textContent = `${formatClpFromPesos(splitSummary.clpSplit.baseUnits)} CLP`;
   elements.receiptSplitNote.textContent = buildSplitNote(splitSummary);
   elements.receiptFeedback.textContent = "";
+  renderTripPlace();
 }
 
 function renderAll() {
   renderConversion();
+  renderTripPlace();
   renderSummary();
 }
 
@@ -438,25 +520,93 @@ function showToast(message) {
   state.toastTimer = window.setTimeout(() => elements.toast.classList.remove("show"), 2600);
 }
 
-function stopSnowGlobeEffect() {
-  window.clearTimeout(snowMotionState.effectTimer);
-  snowMotionState.effectTimer = null;
-  document.body.classList.remove("snow-globe-active");
+function isMotionMobileDevice() {
+  return mobileSummaryAccordion.matches
+    || mobileMotionPointer.matches;
 }
 
-function triggerSnowGlobeEffect() {
+function canRunMotionSnow() {
+  return isMotionMobileDevice()
+    && !reducedMotionPreference.matches
+    && document.visibilityState === "visible";
+}
+
+function cancelDeviceVibration() {
+  if (typeof navigator.vibrate !== "function") return;
+
+  try {
+    navigator.vibrate(0);
+  } catch {
+    // Vibração é um aprimoramento opcional e nunca deve interromper o app.
+  }
+}
+
+function playDeviceVibration(pattern) {
+  const hasUserActivation = !navigator.userActivation
+    || navigator.userActivation.hasBeenActive;
+
   if (
-    !mobileSummaryAccordion.matches
-    || reducedMotionPreference.matches
-    || document.visibilityState !== "visible"
+    !hasUserActivation
+    || typeof navigator.vibrate !== "function"
+    || !canRunMotionSnow()
   ) {
     return;
   }
 
+  try {
+    if (!navigator.vibrate(pattern)) return;
+  } catch {
+    // Safari e outros navegadores sem suporte mantêm apenas o feedback visual.
+  }
+}
+
+function clearSnowGlobeCharge({ cancelVibration = false } = {}) {
+  window.clearTimeout(snowMotionState.chargeTimer);
+  snowMotionState.chargeTimer = null;
+  document.body.classList.remove("snow-globe-charging", ...SNOW_GLOBE_CHARGE_CLASSES);
+
+  if (cancelVibration) cancelDeviceVibration();
+}
+
+function updateSnowGlobeCharge(stage) {
+  if (!canRunMotionSnow()) return;
+
+  const chargeLevel = Math.min(Math.max(Math.trunc(stage), 1), 3);
+  window.clearTimeout(snowMotionState.chargeTimer);
+  document.body.classList.remove(...SNOW_GLOBE_CHARGE_CLASSES);
+  document.body.classList.add("snow-globe-charging", `snow-globe-charge-${chargeLevel}`);
+  playDeviceVibration(getSnowGlobeVibrationPattern(chargeLevel));
+
+  snowMotionState.chargeTimer = window.setTimeout(() => {
+    clearSnowGlobeCharge({ cancelVibration: true });
+    shakeDetector.resetSequence({ rearm: true });
+  }, SHAKE_HIT_WINDOW_MS + 80);
+}
+
+function stopSnowGlobeEffect() {
   window.clearTimeout(snowMotionState.effectTimer);
-  document.body.classList.remove("snow-globe-active");
+  window.clearTimeout(snowMotionState.boomTimer);
+  snowMotionState.effectTimer = null;
+  snowMotionState.boomTimer = null;
+  clearSnowGlobeCharge({ cancelVibration: true });
+  document.body.classList.remove("snow-globe-active", "snow-globe-boom");
+}
+
+function triggerSnowGlobeEffect() {
+  if (!canRunMotionSnow()) return;
+
+  clearSnowGlobeCharge({ cancelVibration: true });
+  window.clearTimeout(snowMotionState.effectTimer);
+  window.clearTimeout(snowMotionState.boomTimer);
+  document.body.classList.remove("snow-globe-active", "snow-globe-boom");
   void document.body.offsetWidth;
-  document.body.classList.add("snow-globe-active");
+  document.body.classList.add("snow-globe-active", "snow-globe-boom");
+  playDeviceVibration(getSnowGlobeVibrationPattern(SHAKE_HITS_REQUIRED, { boom: true }));
+
+  snowMotionState.boomTimer = window.setTimeout(() => {
+    document.body.classList.remove("snow-globe-boom");
+    snowMotionState.boomTimer = null;
+  }, SNOW_GLOBE_BOOM_DURATION_MS);
 
   snowMotionState.effectTimer = window.setTimeout(() => {
     document.body.classList.remove("snow-globe-active");
@@ -464,16 +614,52 @@ function triggerSnowGlobeEffect() {
   }, SNOW_GLOBE_DURATION_MS);
 }
 
+function hasUsableMotionData(event) {
+  return [event?.acceleration, event?.accelerationIncludingGravity].some(vector =>
+    [vector?.x, vector?.y, vector?.z].some(value =>
+      value != null && Number.isFinite(Number(value))
+    )
+  );
+}
+
+function rememberMotionPermission() {
+  snowMotionState.permissionRemembered = true;
+  writeStoredValue(MOTION_PERMISSION_STORAGE_KEY, "granted");
+}
+
+function forgetRememberedMotionPermission() {
+  snowMotionState.permissionRemembered = false;
+  removeStoredValue(MOTION_PERMISSION_STORAGE_KEY);
+}
+
+function confirmMotionPermissionFromEvent(event) {
+  if (
+    snowMotionState.permissionStatus === "granted"
+    || !hasUsableMotionData(event)
+  ) {
+    return;
+  }
+
+  snowMotionState.permissionStatus = "granted";
+  rememberMotionPermission();
+  disarmMotionPermissionGesture();
+}
+
 function handleDeviceMotion(event) {
-  if (shakeDetector.sample(event, performance.now())) triggerSnowGlobeEffect();
+  confirmMotionPermissionFromEvent(event);
+
+  const timestamp = performance.now();
+  const motionSample = shakeDetector.analyze(event, timestamp);
+  if (!motionSample.registered) return;
+
+  if (motionSample.triggered) triggerSnowGlobeEffect();
+  else updateSnowGlobeCharge(motionSample.stage);
 }
 
 function startMotionListener() {
   if (
     snowMotionState.isListening
-    || !mobileSummaryAccordion.matches
-    || reducedMotionPreference.matches
-    || document.visibilityState !== "visible"
+    || !canRunMotionSnow()
   ) {
     return;
   }
@@ -498,47 +684,108 @@ function disarmMotionPermissionGesture() {
   snowMotionState.permissionGestureArmed = false;
 }
 
-async function requestMotionPermissionFromGesture() {
-  disarmMotionPermissionGesture();
-  if (!mobileSummaryAccordion.matches || reducedMotionPreference.matches) return;
+function handleMotionPermissionFailure({ fromGesture }) {
+  if (snowMotionState.permissionStatus === "granted") return true;
+
+  if (fromGesture) {
+    snowMotionState.permissionStatus = "denied";
+  } else {
+    snowMotionState.permissionStatus = "unknown";
+    forgetRememberedMotionPermission();
+  }
+
+  return false;
+}
+
+function requestMotionPermission({ fromGesture = false } = {}) {
+  if (snowMotionState.permissionRequest) return snowMotionState.permissionRequest;
 
   const MotionEvent = window.DeviceMotionEvent;
-  if (typeof MotionEvent?.requestPermission !== "function") return;
+  if (typeof MotionEvent?.requestPermission !== "function") {
+    return Promise.resolve(false);
+  }
 
-  snowMotionState.permissionStatus = "requesting";
+  snowMotionState.permissionStatus = fromGesture ? "requesting" : "checking";
+  const wasRemembered = snowMotionState.permissionRemembered;
+  let browserRequest;
 
   try {
-    const permission = await MotionEvent.requestPermission();
-    snowMotionState.permissionStatus = permission === "granted" ? "granted" : "denied";
-
-    if (permission === "granted") {
-      startMotionListener();
-      showToast("Globo de neve ativado — agora agite o celular.");
-    }
+    // Precisa acontecer diretamente dentro do clique quando o navegador ainda está em "prompt".
+    browserRequest = MotionEvent.requestPermission();
   } catch {
-    snowMotionState.permissionStatus = "denied";
+    handleMotionPermissionFailure({ fromGesture });
+    if (!fromGesture) armMotionPermissionGesture();
+    return Promise.resolve(false);
   }
+
+  const pendingRequest = Promise.resolve(browserRequest)
+    .then(permission => {
+      if (permission !== "granted") {
+        if (snowMotionState.permissionStatus === "granted") return true;
+
+        snowMotionState.permissionStatus = fromGesture ? "denied" : "unknown";
+        forgetRememberedMotionPermission();
+        return false;
+      }
+
+      snowMotionState.permissionStatus = "granted";
+      rememberMotionPermission();
+      disarmMotionPermissionGesture();
+      startMotionListener();
+
+      if (fromGesture && !wasRemembered) {
+        showToast("Globo de neve ativado — agora agite o celular.");
+      }
+
+      return true;
+    })
+    .catch(() => handleMotionPermissionFailure({ fromGesture }))
+    .finally(() => {
+      if (snowMotionState.permissionRequest === pendingRequest) {
+        snowMotionState.permissionRequest = null;
+      }
+
+      if (snowMotionState.permissionStatus === "unknown") {
+        armMotionPermissionGesture();
+      }
+    });
+
+  snowMotionState.permissionRequest = pendingRequest;
+  return pendingRequest;
+}
+
+function requestMotionPermissionFromGesture(event) {
+  if (
+    !event.isTrusted
+    || (event.target instanceof Element && event.target.closest("a[href]"))
+  ) {
+    return;
+  }
+
+  disarmMotionPermissionGesture();
+  if (!canRunMotionSnow()) return;
+
+  void requestMotionPermission({ fromGesture: true });
 }
 
 function armMotionPermissionGesture() {
   if (
     snowMotionState.permissionGestureArmed
     || snowMotionState.permissionStatus !== "unknown"
+    || snowMotionState.permissionRequest
+    || !canRunMotionSnow()
   ) {
     return;
   }
 
   document.addEventListener("click", requestMotionPermissionFromGesture, {
-    capture: true,
-    once: true
+    capture: true
   });
   snowMotionState.permissionGestureArmed = true;
 }
 
 function syncMotionSnow() {
-  const canUseMotion = mobileSummaryAccordion.matches
-    && !reducedMotionPreference.matches
-    && document.visibilityState === "visible"
+  const canUseMotion = canRunMotionSnow()
     && typeof window.DeviceMotionEvent !== "undefined";
 
   if (!canUseMotion) {
@@ -550,8 +797,19 @@ function syncMotionSnow() {
 
   const MotionEvent = window.DeviceMotionEvent;
   if (typeof MotionEvent.requestPermission === "function") {
-    if (snowMotionState.permissionStatus === "granted") startMotionListener();
-    else if (snowMotionState.permissionStatus === "unknown") armMotionPermissionGesture();
+    if (snowMotionState.permissionStatus === "granted") {
+      startMotionListener();
+    } else if (
+      snowMotionState.permissionStatus === "unknown"
+      && snowMotionState.permissionRemembered
+    ) {
+      // O listener é anexado antes da checagem: o WebKit o retoma sem novo prompt
+      // quando a autorização da origem ainda está válida.
+      startMotionListener();
+      void requestMotionPermission();
+    } else if (snowMotionState.permissionStatus === "unknown") {
+      armMotionPermissionGesture();
+    }
     return;
   }
 
@@ -618,6 +876,127 @@ function requestConfirmation({ title, message, confirmLabel, cancelLabel }) {
   });
 }
 
+function getEditingItem() {
+  return session.items.find(item => item.id === state.editingItemId) ?? null;
+}
+
+function formatItemSourceInput(item) {
+  if (item.direction === DIRECTIONS.CLP_TO_BRL) {
+    return formatAmountInput(String(item.clpPesos), item.direction);
+  }
+
+  const reais = Math.floor(item.brlCents / 100);
+  const centavos = String(item.brlCents % 100).padStart(2, "0");
+  return formatAmountInput(`${reais},${centavos}`, item.direction);
+}
+
+function getEditedConversion() {
+  const item = getEditingItem();
+  if (!item) return null;
+
+  const amount = parseAmount(elements.editItemAmount.value, item.direction);
+  if (amount <= 0) return null;
+
+  try {
+    return convertAmount(amount, item.direction, item.rateClpToBrl);
+  } catch {
+    return null;
+  }
+}
+
+function renderItemEditor() {
+  const item = getEditingItem();
+  if (!item) return;
+
+  const ui = DIRECTION_UI[item.direction];
+  const conversion = getEditedConversion();
+  elements.editItemAmountLabel.textContent = ui.amountLabel;
+  elements.editItemInputSymbol.textContent = ui.inputSymbol;
+  elements.editItemInputCode.textContent = ui.inputCode;
+  elements.editItemResultLabel.textContent = ui.resultLabel;
+  elements.editItemResult.textContent = item.direction === DIRECTIONS.CLP_TO_BRL
+    ? formatBrlFromCents(conversion?.brlCents ?? 0)
+    : formatClpFromPesos(conversion?.clpPesos ?? 0);
+  elements.editItemRate.textContent = `Cotação preservada · 1 CLP = ${formatRate(item.rateClpToBrl)}`;
+  elements.saveEditItemButton.disabled = !conversion;
+}
+
+function openItemEditor(itemId) {
+  const item = session.items.find(candidate => candidate.id === itemId);
+  if (!item) return;
+
+  state.editingItemId = item.id;
+  state.editDecimalPointTyped = false;
+  elements.editItemLabel.value = item.label;
+  elements.editItemAmount.value = formatItemSourceInput(item);
+  renderItemEditor();
+  openDialog(elements.editItemDialog);
+
+  window.setTimeout(() => {
+    const initialField = item.label ? elements.editItemLabel : elements.editItemAmount;
+    initialField.focus();
+    initialField.select();
+  }, 0);
+}
+
+function closeItemEditor() {
+  state.editingItemId = null;
+  state.editDecimalPointTyped = false;
+  closeDialog(elements.editItemDialog);
+}
+
+function saveEditedItem() {
+  const item = getEditingItem();
+  const conversion = getEditedConversion();
+  if (!item || !conversion) {
+    elements.editItemAmount.focus();
+    return;
+  }
+
+  try {
+    const updatedItem = updateItem(item, {
+      label: elements.editItemLabel.value,
+      clpPesos: conversion.clpPesos,
+      brlCents: conversion.brlCents
+    });
+    const nextItems = session.items.map(candidate => (
+      candidate.id === item.id ? updatedItem : candidate
+    ));
+    calculateTotals(nextItems);
+
+    session.items = nextItems;
+    session.status = "open";
+    const wasPersisted = persistSession();
+    closeItemEditor();
+    renderSummary();
+    showToast(wasPersisted
+      ? "Item atualizado."
+      : "Item atualizado apenas nesta tela; não foi possível salvar a alteração.");
+
+    const editedButton = [...elements.itemsList.querySelectorAll("button[data-edit-item-id]")]
+      .find(button => button.dataset.editItemId === item.id);
+    editedButton?.focus();
+  } catch {
+    elements.editItemRate.textContent = "Esse valor é muito alto ou inválido para salvar.";
+    elements.editItemAmount.focus();
+  }
+}
+
+async function confirmItemRemoval(itemId) {
+  const item = session.items.find(candidate => candidate.id === itemId);
+  if (!item) return;
+
+  const itemName = item.label || "este item";
+  const confirmed = await requestConfirmation({
+    title: "Remover este item?",
+    message: `${itemName} será removido do resumo. Esta ação não pode ser desfeita.`,
+    confirmLabel: "Sim, remover",
+    cancelLabel: "Manter item"
+  });
+
+  if (confirmed) removeItem(item.id);
+}
+
 function addCurrentConversion() {
   const conversion = getCurrentConversion();
   if (!conversion) {
@@ -669,7 +1048,7 @@ function removeItem(itemId) {
     ? "Item removido do resumo."
     : "Item removido apenas desta tela; não foi possível salvar a alteração.");
 
-  const remainingButtons = elements.itemsList.querySelectorAll("button[data-item-id]");
+  const remainingButtons = elements.itemsList.querySelectorAll("button[data-remove-item-id]");
   const nextButton = remainingButtons[Math.min(removedIndex, remainingButtons.length - 1)];
   if (nextButton) nextButton.focus();
   else elements.amount.focus();
@@ -689,13 +1068,16 @@ function updatePeopleCount(value) {
   if (!wasPersisted) showToast("A divisão mudou apenas nesta tela; não foi possível salvá-la.");
 }
 
-function resetAccount() {
+function resetAccount({ preservePlace = false } = {}) {
+  const placeName = preservePlace ? session.placeName : "";
+
   try {
     clearSession();
   } catch {
     // A conta ainda pode ser reiniciada em memória se o storage estiver bloqueado.
   }
   session = createSession();
+  session.placeName = placeName;
   const wasPersisted = persistSession();
   elements.amount.value = "";
   elements.itemLabel.value = "";
@@ -711,6 +1093,7 @@ function buildShareText() {
   const splitLabel = hasRoundingAdjustment ? "Parcela-base" : "Por pessoa";
   const lines = [
     "CLP ⬌ BRL · Resumo da viagem",
+    ...(session.placeName ? [`Lugar: ${session.placeName}`] : []),
     "",
     ...session.items.map((item, index) => (
       `${index + 1}. ${item.label || `Item ${index + 1}`} — ${formatClpFromPesos(item.clpPesos)} CLP · ${formatBrlFromCents(item.brlCents)}`
@@ -867,6 +1250,45 @@ elements.amount.addEventListener("blur", () => {
   renderConversion();
 });
 
+elements.tripPlace.addEventListener("input", () => {
+  session.placeName = elements.tripPlace.value;
+  const wasPersisted = persistSession();
+  state.placeWasPersisted = wasPersisted;
+  renderTripPlace({ syncInput: false });
+
+  if (!wasPersisted) {
+    elements.tripPlaceStatus.textContent = "Salvo apenas nesta tela.";
+  }
+});
+
+elements.tripPlace.addEventListener("focus", () => {
+  state.isEditingPlace = true;
+});
+
+elements.tripPlace.addEventListener("blur", () => {
+  state.isEditingPlace = false;
+  renderTripPlace();
+  if (!state.placeWasPersisted) showToast("O lugar ficou salvo apenas nesta tela.");
+});
+elements.tripPlace.addEventListener("keydown", event => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  elements.tripPlace.blur();
+});
+
+elements.editTripPlaceButton.addEventListener("click", () => {
+  state.isEditingPlace = true;
+  renderTripPlace();
+  elements.tripContext.scrollIntoView({
+    behavior: reducedMotionPreference.matches ? "auto" : "smooth",
+    block: "center"
+  });
+  window.setTimeout(() => {
+    elements.tripPlace.focus({ preventScroll: true });
+    elements.tripPlace.select();
+  }, reducedMotionPreference.matches ? 0 : 220);
+});
+
 elements.swapButton.addEventListener("click", () => {
   state.direction = state.direction === DIRECTIONS.CLP_TO_BRL
     ? DIRECTIONS.BRL_TO_CLP
@@ -904,8 +1326,67 @@ elements.saveRateButton.addEventListener("click", () => {
 });
 
 elements.itemsList.addEventListener("click", event => {
-  const button = event.target.closest("button[data-item-id]");
-  if (button) removeItem(button.dataset.itemId);
+  const editButton = event.target.closest("button[data-edit-item-id]");
+  if (editButton) {
+    openItemEditor(editButton.dataset.editItemId);
+    return;
+  }
+
+  const removeButton = event.target.closest("button[data-remove-item-id]");
+  if (removeButton) void confirmItemRemoval(removeButton.dataset.removeItemId);
+});
+
+elements.editItemAmount.addEventListener("beforeinput", event => {
+  const item = getEditingItem();
+  state.editDecimalPointTyped = item?.direction === DIRECTIONS.BRL_TO_CLP
+    && event.data === ".";
+});
+
+elements.editItemAmount.addEventListener("input", () => {
+  const item = getEditingItem();
+  if (!item) return;
+
+  const allowDecimalPoint = state.editDecimalPointTyped;
+  state.editDecimalPointTyped = false;
+  elements.editItemAmount.value = formatAmountInput(
+    elements.editItemAmount.value,
+    item.direction,
+    { allowDecimalPoint }
+  );
+  renderItemEditor();
+});
+
+elements.editItemAmount.addEventListener("blur", () => {
+  const item = getEditingItem();
+  if (!item) return;
+
+  elements.editItemAmount.value = formatAmountInput(elements.editItemAmount.value, item.direction);
+  renderItemEditor();
+});
+
+elements.editItemForm.addEventListener("submit", event => {
+  event.preventDefault();
+  saveEditedItem();
+});
+
+elements.closeEditItemButton.addEventListener("click", closeItemEditor);
+elements.cancelEditItemButton.addEventListener("click", closeItemEditor);
+
+elements.editItemDialog.addEventListener("cancel", event => {
+  event.preventDefault();
+  closeItemEditor();
+});
+
+elements.editItemDialog.addEventListener("click", event => {
+  if (event.target !== elements.editItemDialog) return;
+
+  const bounds = elements.editItemDialog.getBoundingClientRect();
+  const clickedInside = event.clientX >= bounds.left
+    && event.clientX <= bounds.right
+    && event.clientY >= bounds.top
+    && event.clientY <= bounds.bottom;
+
+  if (!clickedInside) closeItemEditor();
 });
 
 elements.decreasePeopleButton.addEventListener("click", () => updatePeopleCount(session.peopleCount - 1));
@@ -925,9 +1406,10 @@ elements.clearSummaryButton.addEventListener("click", async () => {
   });
 
   if (!confirmed) return;
-  const wasPersisted = resetAccount();
+  const keptPlace = Boolean(session.placeName);
+  const wasPersisted = resetAccount({ preservePlace: true });
   showToast(wasPersisted
-    ? "Resumo limpo."
+    ? `Resumo limpo.${keptPlace ? " O lugar foi mantido." : ""}`
     : "Resumo limpo apenas nesta tela; não foi possível salvar a alteração.");
   elements.amount.focus();
 });
@@ -953,9 +1435,10 @@ elements.editAccountButton.addEventListener("click", () => {
 
 elements.newAccountButton.addEventListener("click", async () => {
   const itemCount = session.items.length;
+  const placeMessage = session.placeName ? " e o lugar definido" : "";
   const confirmed = await requestConfirmation({
     title: "Começar uma nova conta?",
-    message: `A conta atual com ${itemCount} ${pluralize(itemCount, "item", "itens")} será apagada para você começar do zero.`,
+    message: `A conta atual, com ${itemCount} ${pluralize(itemCount, "item", "itens")}${placeMessage}, será apagada para você começar do zero.`,
     confirmLabel: "Apagar e começar",
     cancelLabel: "Voltar ao recibo"
   });
@@ -1019,6 +1502,12 @@ if (typeof mobileSummaryAccordion.addEventListener === "function") {
 } else {
   mobileSummaryAccordion.addListener(syncSummaryAccordion);
   mobileSummaryAccordion.addListener(syncMotionSnow);
+}
+
+if (typeof mobileMotionPointer.addEventListener === "function") {
+  mobileMotionPointer.addEventListener("change", syncMotionSnow);
+} else {
+  mobileMotionPointer.addListener(syncMotionSnow);
 }
 
 if (typeof reducedMotionPreference.addEventListener === "function") {
