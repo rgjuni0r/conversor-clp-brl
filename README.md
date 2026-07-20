@@ -324,7 +324,7 @@ Ao publicar uma alteração em `index.html`, `style.css`, `app.js`, ícones ou m
 
 ```js
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v25`;
+const CACHE = `${CACHE_PREFIX}v26`;
 ```
 
 Esse versionamento força a remoção do cache anterior durante a ativação do novo Service Worker.
