@@ -1,6 +1,6 @@
 
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v36`;
+const CACHE = `${CACHE_PREFIX}v37`;
 const ASSETS = [
   "./",
   "./index.html",

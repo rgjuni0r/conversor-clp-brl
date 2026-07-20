@@ -245,22 +245,22 @@ test("não deixa ruído da aceleração linear ocultar o sensor com gravidade", 
   assert.equal(detector.sample(noisyMotion(0, 3.5), 360), true);
 });
 
-test("cria turbulência visual desde o primeiro movimento significativo", () => {
-  const inactive = createSnowGlobeFrame({
-    magnitude: .8,
-    vector: { x: .8, y: 0, z: 0 }
-  }, { random: () => .5 });
+test("ignora movimentos simples e cria turbulência somente com movimento intencional", () => {
+  const simpleMovements = [.8, 2.5, 4.5, 6.4].map(magnitude => createSnowGlobeFrame({
+    magnitude,
+    vector: { x: magnitude, y: 0, z: 0 }
+  }, { random: () => .5 }));
   const active = createSnowGlobeFrame({
     magnitude: 9,
     vector: { x: 9, y: 0, z: 0 }
   }, { random: () => .5 });
 
-  assert.equal(inactive.active, false);
+  assert.ok(simpleMovements.every(frame => frame.active === false));
   assert.equal(active.active, true);
   assert.ok(active.intensity > 0);
   assert.ok(active.offsetX > 0);
   assert.equal(active.offsetY, 0);
-  assert.ok(active.durationMs < inactive.durationMs);
+  assert.ok(active.durationMs < simpleMovements[0].durationMs);
 });
 
 test("varia a trajetória da neve mesmo para impulsos de mesma intensidade", () => {

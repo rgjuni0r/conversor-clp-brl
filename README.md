@@ -66,7 +66,7 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Instalação como PWA no iPhone, Android e navegadores compatíveis.
 - Layout responsivo com suporte às áreas seguras do iPhone.
 - Identidade visual inspirada na Cordilheira dos Andes, com neve animada em profundidade e movimento acessível.
-- Efeito de globo de neve no mobile com turbulência contínua, trajetórias aleatórias e explosão de neve, sem deslocar a interface.
+- Efeito de globo de neve no mobile com zona morta para movimentos simples, turbulência aleatória durante uma agitação intencional e explosão de neve sem deslocar a interface.
 - Pulsos táteis crescentes e vibração de impacto em navegadores móveis compatíveis.
 - Retomada automática do sensor após a primeira autorização, sem solicitações repetidas pelo app.
 - Resumo em accordion na versão mobile, preservando a visualização completa no desktop.
@@ -259,7 +259,7 @@ A suíte cobre:
 - criação, persistência e recuperação de sessões;
 - descarte seguro de dados corrompidos;
 - validação da cotação diária e fallback entre os dois espelhos.
-- detecção de shake moderado, inversões contínuas, turbulência visual aleatória, progressão, rearme, intervalo mínimo, cooldown e fallback amplificado com gravidade;
+- detecção de shake moderado, rejeição de movimentos simples, inversões contínuas, turbulência visual aleatória, progressão, rearme, intervalo mínimo, cooldown e fallback amplificado com gravidade;
 - padrões crescentes de vibração e pulso final do efeito de neve.
 
 ## Instalação como aplicativo
@@ -274,7 +274,7 @@ A suíte cobre:
 
 Na primeira interação, o iOS pode solicitar acesso aos sensores de movimento. Depois de autorizado, o app salva essa preferência, reanexa o sensor automaticamente nos próximos acessos e consulta a autorização já existente sem abrir outro diálogo. Uma nova solicitação só pode ocorrer se o próprio navegador ou sistema tiver perdido ou revogado a permissão. O efeito também permanece ativo em modo paisagem e fica desativado quando a preferência **Reduzir Movimento** está ativa.
 
-Ao permitir, agitar o aparelho movimenta somente a neve e intensifica o efeito por alguns segundos; a interface permanece estável. Em navegadores compatíveis, os pulsos físicos aumentam até o impacto final. O Safari/WebKit ainda não oferece a Vibration API; por isso, no iPhone e no iPad o impacto permanece visual, sem vibração física.
+Ao permitir, uma agitação intencional movimenta somente a neve e intensifica o efeito por alguns segundos; inclinações, pequenos ajustes e movimentos simples permanecem dentro da zona morta, e a interface continua estável. Em navegadores compatíveis, os pulsos físicos aumentam até o impacto final. O Safari/WebKit ainda não oferece a Vibration API; por isso, no iPhone e no iPad o impacto permanece visual, sem vibração física.
 
 ### Android
 
@@ -348,7 +348,7 @@ Ao publicar uma alteração em `index.html`, `style.css`, `app.js`, ícones ou m
 
 ```js
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v36`;
+const CACHE = `${CACHE_PREFIX}v37`;
 ```
 
 Esse versionamento força a remoção do cache anterior durante a ativação do novo Service Worker.
