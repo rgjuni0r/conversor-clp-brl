@@ -66,7 +66,7 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Instalação como PWA no iPhone, Android e navegadores compatíveis.
 - Layout responsivo com suporte às áreas seguras do iPhone.
 - Identidade visual inspirada na Cordilheira dos Andes, com neve animada em profundidade e movimento acessível.
-- Efeito de globo de neve no mobile com turbulência contínua, trajetórias aleatórias, tremor progressivo e explosão sincronizada.
+- Efeito de globo de neve no mobile com turbulência contínua, trajetórias aleatórias e explosão de neve, sem deslocar a interface.
 - Pulsos táteis crescentes e vibração de impacto em navegadores móveis compatíveis.
 - Retomada automática do sensor após a primeira autorização, sem solicitações repetidas pelo app.
 - Resumo em accordion na versão mobile, preservando a visualização completa no desktop.
@@ -274,7 +274,7 @@ A suíte cobre:
 
 Na primeira interação, o iOS pode solicitar acesso aos sensores de movimento. Depois de autorizado, o app salva essa preferência, reanexa o sensor automaticamente nos próximos acessos e consulta a autorização já existente sem abrir outro diálogo. Uma nova solicitação só pode ocorrer se o próprio navegador ou sistema tiver perdido ou revogado a permissão. O efeito também permanece ativo em modo paisagem e fica desativado quando a preferência **Reduzir Movimento** está ativa.
 
-Ao permitir, agitar o aparelho produz um tremor visual crescente e intensifica a neve por alguns segundos. O Safari/WebKit ainda não oferece a Vibration API; por isso, no iPhone e no iPad o impacto é visual, sem vibração física.
+Ao permitir, agitar o aparelho movimenta somente a neve e intensifica o efeito por alguns segundos; a interface permanece estável. Em navegadores compatíveis, os pulsos físicos aumentam até o impacto final. O Safari/WebKit ainda não oferece a Vibration API; por isso, no iPhone e no iPad o impacto permanece visual, sem vibração física.
 
 ### Android
 
@@ -366,7 +366,7 @@ Esse versionamento força a remoção do cache anterior durante a ativação do 
 - Testar o carregamento offline após o primeiro acesso.
 - Verificar instalação e ícones do PWA.
 - Incrementar a versão do cache.
-- Testar o tremor visual no Safari do iPhone, inclusive em paisagem, e o feedback tátil no Chrome do Android.
+- Testar que somente a neve se move no Safari do iPhone, inclusive em paisagem, e que o feedback tátil ocorre no Chrome do Android sem deslocar a interface.
 - Reabrir o PWA após autorizar o movimento e confirmar que o app não solicita novamente enquanto a permissão do navegador continua válida.
 - Testar localização concedida, negada, indisponível e sem conexão, mantendo o preenchimento manual funcional.
 
@@ -397,7 +397,7 @@ Como o projeto é totalmente client-side, qualquer segredo incluído no JavaScri
 - Itens já registrados preservam a cotação original e não são recalculados automaticamente.
 - O efeito de shake depende de suporte e permissão para `DeviceMotion`; sem isso, a neve ambiente continua normalmente.
 - Se o navegador apagar ou revogar a permissão de movimento, uma nova confirmação do sistema será inevitável no próximo gesto do usuário.
-- A vibração física usa `navigator.vibrate()` e atualmente fica restrita, na prática, a navegadores baseados em Chromium; o iPhone mantém o feedback visual.
+- A vibração física usa `navigator.vibrate()` e atualmente fica restrita, na prática, a navegadores baseados em Chromium; o iPhone mantém somente o movimento visual da neve, sem sacudir a interface.
 
 ## Roadmap
 

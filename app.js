@@ -162,14 +162,8 @@ const shakeDetector = new ShakeDetector({
   gravityDeltaScale: 2.4
 });
 const SNOW_GLOBE_DURATION_MS = 7_000;
-const SNOW_GLOBE_BOOM_DURATION_MS = 480;
 const SNOW_GLOBE_STIR_IDLE_MS = 520;
 const SNOW_GLOBE_STIR_FRAME_INTERVAL_MS = 48;
-const SNOW_GLOBE_CHARGE_CLASSES = Object.freeze([
-  "snow-globe-charge-1",
-  "snow-globe-charge-2",
-  "snow-globe-charge-3"
-]);
 const snowMotionState = {
   isListening: false,
   permissionStatus: "unknown",
@@ -177,8 +171,6 @@ const snowMotionState = {
   permissionRequest: null,
   permissionRemembered: readStoredText(MOTION_PERMISSION_STORAGE_KEY) === "granted",
   effectTimer: null,
-  chargeTimer: null,
-  boomTimer: null,
   stirTimer: null,
   lastStirFrameAt: -Infinity
 };
@@ -626,10 +618,6 @@ function playDeviceVibration(pattern) {
 }
 
 function clearSnowGlobeCharge({ cancelVibration = false } = {}) {
-  window.clearTimeout(snowMotionState.chargeTimer);
-  snowMotionState.chargeTimer = null;
-  document.body.classList.remove("snow-globe-charging", ...SNOW_GLOBE_CHARGE_CLASSES);
-
   if (cancelVibration) cancelDeviceVibration();
 }
 
@@ -675,25 +663,15 @@ function updateSnowGlobeCharge(stage) {
   if (!canRunMotionSnow()) return;
 
   const chargeLevel = Math.min(Math.max(Math.trunc(stage), 1), 3);
-  window.clearTimeout(snowMotionState.chargeTimer);
-  document.body.classList.remove(...SNOW_GLOBE_CHARGE_CLASSES);
-  document.body.classList.add("snow-globe-charging", `snow-globe-charge-${chargeLevel}`);
   playDeviceVibration(getSnowGlobeVibrationPattern(chargeLevel));
-
-  snowMotionState.chargeTimer = window.setTimeout(() => {
-    clearSnowGlobeCharge({ cancelVibration: true });
-    shakeDetector.resetSequence({ rearm: true });
-  }, SHAKE_HIT_WINDOW_MS + 80);
 }
 
 function stopSnowGlobeEffect() {
   window.clearTimeout(snowMotionState.effectTimer);
-  window.clearTimeout(snowMotionState.boomTimer);
   snowMotionState.effectTimer = null;
-  snowMotionState.boomTimer = null;
   clearSnowGlobeStir();
   clearSnowGlobeCharge({ cancelVibration: true });
-  document.body.classList.remove("snow-globe-active", "snow-globe-boom");
+  document.body.classList.remove("snow-globe-active");
 }
 
 function triggerSnowGlobeEffect() {
@@ -701,16 +679,10 @@ function triggerSnowGlobeEffect() {
 
   clearSnowGlobeCharge({ cancelVibration: true });
   window.clearTimeout(snowMotionState.effectTimer);
-  window.clearTimeout(snowMotionState.boomTimer);
-  document.body.classList.remove("snow-globe-active", "snow-globe-boom");
+  document.body.classList.remove("snow-globe-active");
   void document.body.offsetWidth;
-  document.body.classList.add("snow-globe-active", "snow-globe-boom");
+  document.body.classList.add("snow-globe-active");
   playDeviceVibration(getSnowGlobeVibrationPattern(SHAKE_HITS_REQUIRED, { boom: true }));
-
-  snowMotionState.boomTimer = window.setTimeout(() => {
-    document.body.classList.remove("snow-globe-boom");
-    snowMotionState.boomTimer = null;
-  }, SNOW_GLOBE_BOOM_DURATION_MS);
 
   snowMotionState.effectTimer = window.setTimeout(() => {
     document.body.classList.remove("snow-globe-active");
