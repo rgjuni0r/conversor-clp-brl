@@ -67,7 +67,6 @@ A sessão fica salva no aparelho e continua disponível após fechar ou recarreg
 - Layout responsivo com suporte às áreas seguras do iPhone.
 - Identidade visual inspirada na Cordilheira dos Andes, com neve animada em profundidade e movimento acessível.
 - Efeito de globo de neve no mobile com zona morta para movimentos simples, turbulência aleatória durante uma agitação intencional e explosão de neve sem deslocar a interface.
-- Pulsos táteis crescentes e vibração de impacto em navegadores móveis compatíveis.
 - Retomada automática do sensor após a primeira autorização, sem solicitações repetidas pelo app.
 - Resumo em accordion na versão mobile, preservando a visualização completa no desktop.
 
@@ -83,7 +82,7 @@ flowchart TD
     APP --> SESSION[js/session-store.js<br/>sessão versionada]
     APP --> RATES[js/rates.js<br/>fontes e fallback]
     APP --> LOCATION[js/location.js<br/>geolocalização e nome do lugar]
-    APP --> MOTION[js/snow-motion.js<br/>shake, progressão e padrões táteis]
+    APP --> MOTION[js/snow-motion.js<br/>shake, progressão e turbulência da neve]
     LOCATION --> BDC[BigDataCloud<br/>geocodificação reversa client-side]
     RATES --> PRIMARY[jsDelivr<br/>referência diária CC0]
     PRIMARY -->|sucesso| STORE[localStorage]
@@ -106,7 +105,7 @@ flowchart TD
 | `js/location.js` | Validação das coordenadas atuais e conversão client-side para um nome de localidade. |
 | `js/rates.js` | Consulta cambial, timeout, validação da resposta e espelho de contingência. |
 | `js/session-store.js` | Modelo versionado, validação e persistência da conta. |
-| `js/snow-motion.js` | Detecção de shake, inversão direcional, turbulência aleatória, progressão, cooldown e padrões táteis. |
+| `js/snow-motion.js` | Detecção de shake, inversão direcional, turbulência aleatória, progressão e cooldown. |
 | `sw.js` | Cache dos arquivos locais e funcionamento offline do shell. |
 | `manifest.json` | Nome, ícones, cores e comportamento de instalação do PWA. |
 | `tests/` | Testes automatizados de moeda, sessão, divisão, fontes cambiais e movimento. |
@@ -260,7 +259,6 @@ A suíte cobre:
 - descarte seguro de dados corrompidos;
 - validação da cotação diária e fallback entre os dois espelhos.
 - detecção de shake moderado, rejeição de movimentos simples, inversões contínuas, turbulência visual aleatória, progressão, rearme, intervalo mínimo, cooldown e fallback amplificado com gravidade;
-- padrões crescentes de vibração e pulso final do efeito de neve.
 
 ## Instalação como aplicativo
 
@@ -274,15 +272,13 @@ A suíte cobre:
 
 Na primeira interação, o iOS pode solicitar acesso aos sensores de movimento. Depois de autorizado, o app salva essa preferência, reanexa o sensor automaticamente nos próximos acessos e consulta a autorização já existente sem abrir outro diálogo. Uma nova solicitação só pode ocorrer se o próprio navegador ou sistema tiver perdido ou revogado a permissão. O efeito também permanece ativo em modo paisagem e fica desativado quando a preferência **Reduzir Movimento** está ativa.
 
-Ao permitir, uma agitação intencional movimenta somente a neve e intensifica o efeito por alguns segundos; inclinações, pequenos ajustes e movimentos simples permanecem dentro da zona morta, e a interface continua estável. Em navegadores compatíveis, os pulsos físicos aumentam até o impacto final. O Safari/WebKit ainda não oferece a Vibration API; por isso, no iPhone e no iPad o impacto permanece visual, sem vibração física.
+Ao permitir, uma agitação intencional movimenta somente a neve e intensifica o efeito por alguns segundos; inclinações, pequenos ajustes e movimentos simples permanecem dentro da zona morta, e a interface continua estável. O efeito não aciona vibração física no aparelho.
 
 ### Android
 
 1. Abra o endereço no Chrome.
 2. Acesse o menu do navegador.
 3. Selecione **Instalar app** ou **Adicionar à tela inicial**.
-
-No Chrome e em outros navegadores Chromium compatíveis, cada impulso gera uma resposta tátil crescente e o estouro termina com um padrão mais forte. O navegador pode exigir uma interação prévia com a tela e as configurações do aparelho ainda podem silenciar a vibração.
 
 ## Publicação no GitHub Pages
 
@@ -348,7 +344,7 @@ Ao publicar uma alteração em `index.html`, `style.css`, `app.js`, ícones ou m
 
 ```js
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v37`;
+const CACHE = `${CACHE_PREFIX}v38`;
 ```
 
 Esse versionamento força a remoção do cache anterior durante a ativação do novo Service Worker.
@@ -366,7 +362,7 @@ Esse versionamento força a remoção do cache anterior durante a ativação do 
 - Testar o carregamento offline após o primeiro acesso.
 - Verificar instalação e ícones do PWA.
 - Incrementar a versão do cache.
-- Testar que somente a neve se move no Safari do iPhone, inclusive em paisagem, e que o feedback tátil ocorre no Chrome do Android sem deslocar a interface.
+- Testar que somente a neve se move no celular, inclusive em paisagem, sem vibração física nem deslocamento da interface.
 - Reabrir o PWA após autorizar o movimento e confirmar que o app não solicita novamente enquanto a permissão do navegador continua válida.
 - Testar localização concedida, negada, indisponível e sem conexão, mantendo o preenchimento manual funcional.
 
@@ -377,7 +373,6 @@ Esse versionamento força a remoção do cache anterior durante a ativação do 
 - A localização é solicitada somente após o toque no ícone. As coordenadas atuais são enviadas diretamente pelo navegador ao endpoint client-side da BigDataCloud para obter cidade/localidade, mas não são armazenadas pelo app; somente o nome resultante entra na sessão local.
 - Os dados do sensor de movimento são processados apenas em memória e nunca são armazenados ou enviados.
 - O app armazena somente que o efeito já foi ativado; a autorização real do sensor pertence ao navegador e ao sistema operacional.
-- O feedback tátil usa apenas padrões locais de duração e não coleta informações do aparelho.
 - As consultas cambiais são enviadas diretamente às APIs identificadas neste documento.
 - Não existem chaves privadas ou segredos incorporados ao código.
 - Em produção, o PWA deve ser servido exclusivamente por HTTPS.
@@ -397,7 +392,6 @@ Como o projeto é totalmente client-side, qualquer segredo incluído no JavaScri
 - Itens já registrados preservam a cotação original e não são recalculados automaticamente.
 - O efeito de shake depende de suporte e permissão para `DeviceMotion`; sem isso, a neve ambiente continua normalmente.
 - Se o navegador apagar ou revogar a permissão de movimento, uma nova confirmação do sistema será inevitável no próximo gesto do usuário.
-- A vibração física usa `navigator.vibrate()` e atualmente fica restrita, na prática, a navegadores baseados em Chromium; o iPhone mantém somente o movimento visual da neve, sem sacudir a interface.
 
 ## Roadmap
 

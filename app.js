@@ -31,8 +31,7 @@ import {
 } from "./js/rates.js";
 import {
   createSnowGlobeFrame,
-  ShakeDetector,
-  getSnowGlobeVibrationPattern
+  ShakeDetector
 } from "./js/snow-motion.js";
 
 const $ = id => document.getElementById(id);
@@ -588,39 +587,6 @@ function canRunMotionSnow() {
     && document.visibilityState === "visible";
 }
 
-function cancelDeviceVibration() {
-  if (typeof navigator.vibrate !== "function") return;
-
-  try {
-    navigator.vibrate(0);
-  } catch {
-    // Vibração é um aprimoramento opcional e nunca deve interromper o app.
-  }
-}
-
-function playDeviceVibration(pattern) {
-  const hasUserActivation = !navigator.userActivation
-    || navigator.userActivation.hasBeenActive;
-
-  if (
-    !hasUserActivation
-    || typeof navigator.vibrate !== "function"
-    || !canRunMotionSnow()
-  ) {
-    return;
-  }
-
-  try {
-    if (!navigator.vibrate(pattern)) return;
-  } catch {
-    // Safari e outros navegadores sem suporte mantêm apenas o feedback visual.
-  }
-}
-
-function clearSnowGlobeCharge({ cancelVibration = false } = {}) {
-  if (cancelVibration) cancelDeviceVibration();
-}
-
 function clearSnowGlobeStir() {
   window.clearTimeout(snowMotionState.stirTimer);
   snowMotionState.stirTimer = null;
@@ -644,9 +610,6 @@ function stirSnowGlobe(motionSample, timestamp) {
   snowMotionState.lastStirFrameAt = timestamp;
 
   const rootStyle = document.body.style;
-  rootStyle.setProperty("--snow-stir-x", `${frame.offsetX.toFixed(2)}px`);
-  rootStyle.setProperty("--snow-stir-y", `${frame.offsetY.toFixed(2)}px`);
-  rootStyle.setProperty("--snow-stir-rotation", `${frame.rotation.toFixed(2)}deg`);
   rootStyle.setProperty("--snow-stir-layer-start", `${frame.layerStart.toFixed(2)}vw`);
   rootStyle.setProperty("--snow-stir-layer-end", `${frame.layerEnd.toFixed(2)}vw`);
   rootStyle.setProperty("--snow-extra-drift", `${frame.extraDrift.toFixed(2)}px`);
@@ -659,30 +622,20 @@ function stirSnowGlobe(motionSample, timestamp) {
   document.body.classList.add("snow-globe-stirring");
 }
 
-function updateSnowGlobeCharge(stage) {
-  if (!canRunMotionSnow()) return;
-
-  const chargeLevel = Math.min(Math.max(Math.trunc(stage), 1), 3);
-  playDeviceVibration(getSnowGlobeVibrationPattern(chargeLevel));
-}
-
 function stopSnowGlobeEffect() {
   window.clearTimeout(snowMotionState.effectTimer);
   snowMotionState.effectTimer = null;
   clearSnowGlobeStir();
-  clearSnowGlobeCharge({ cancelVibration: true });
   document.body.classList.remove("snow-globe-active");
 }
 
 function triggerSnowGlobeEffect() {
   if (!canRunMotionSnow()) return;
 
-  clearSnowGlobeCharge({ cancelVibration: true });
   window.clearTimeout(snowMotionState.effectTimer);
   document.body.classList.remove("snow-globe-active");
   void document.body.offsetWidth;
   document.body.classList.add("snow-globe-active");
-  playDeviceVibration(getSnowGlobeVibrationPattern(SHAKE_HITS_REQUIRED, { boom: true }));
 
   snowMotionState.effectTimer = window.setTimeout(() => {
     document.body.classList.remove("snow-globe-active");
@@ -730,7 +683,6 @@ function handleDeviceMotion(event) {
   if (!motionSample.registered) return;
 
   if (motionSample.triggered) triggerSnowGlobeEffect();
-  else updateSnowGlobeCharge(motionSample.stage);
 }
 
 function startMotionListener() {

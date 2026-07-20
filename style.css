@@ -1606,19 +1606,8 @@ label,
 @keyframes backdrop-in { from { opacity: 0; } }
 
 @media (max-width: 820px), (any-pointer: coarse) and (max-width: 1024px) {
-  body.snow-globe-stirring .snowfall {
-    transform:
-      translate3d(var(--snow-stir-x), var(--snow-stir-y), 0)
-      rotate(var(--snow-stir-rotation))
-      scale(1.08);
-  }
-
   body.snow-globe-stirring .snowfall-foreground {
     opacity: 1;
-    transform:
-      translate3d(var(--snow-stir-x), var(--snow-stir-y), 0)
-      rotate(var(--snow-stir-rotation))
-      scale(1.045);
   }
 
   body.snow-globe-stirring .snow-layer-burst,

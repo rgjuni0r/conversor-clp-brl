@@ -9,13 +9,6 @@ const DEFAULT_DIRECTION_REARM_DOT = .2;
 const DEFAULT_STIR_THRESHOLD = 6.5;
 const DEFAULT_STIR_MAX_MAGNITUDE = 18;
 
-const CHARGE_VIBRATION_PATTERNS = Object.freeze([
-  Object.freeze([10]),
-  Object.freeze([18]),
-  Object.freeze([28, 18, 28])
-]);
-const BOOM_VIBRATION_PATTERN = Object.freeze([70, 30, 110, 35, 160]);
-
 function readVector(value) {
   if (value?.x == null || value?.y == null || value?.z == null) return null;
 
@@ -288,17 +281,4 @@ export function createSnowGlobeFrame(
     extraDrift: clamp(offsetX * 1.5 + randomRotation * 16, -42, 42),
     durationMs: Math.round(1_450 - intensity * 850)
   };
-}
-
-export function getSnowGlobeVibrationPattern(stage, { boom = false } = {}) {
-  if (boom) return [...BOOM_VIBRATION_PATTERN];
-
-  const normalizedStage = Math.trunc(Number(stage));
-  if (!Number.isFinite(normalizedStage) || normalizedStage < 1) return [];
-
-  const pattern = CHARGE_VIBRATION_PATTERNS[
-    Math.min(normalizedStage, CHARGE_VIBRATION_PATTERNS.length) - 1
-  ];
-
-  return [...pattern];
 }

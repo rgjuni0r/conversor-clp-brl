@@ -3,8 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   createSnowGlobeFrame,
-  ShakeDetector,
-  getSnowGlobeVibrationPattern
+  ShakeDetector
 } from "../js/snow-motion.js";
 
 const motion = (x, y, z) => ({ acceleration: { x, y, z } });
@@ -273,19 +272,4 @@ test("varia a trajetória da neve mesmo para impulsos de mesma intensidade", () 
   assert.notEqual(first.offsetX, second.offsetX);
   assert.notEqual(first.offsetY, second.offsetY);
   assert.notEqual(first.rotation, second.rotation);
-});
-
-test("gera pulsos crescentes e um padrão próprio para o boom", () => {
-  const chargePatterns = [1, 2, 3].map(stage => getSnowGlobeVibrationPattern(stage));
-  const durations = chargePatterns.map(pattern => pattern.reduce((total, value) => total + value, 0));
-
-  assert.deepEqual(chargePatterns, [[10], [18], [28, 18, 28]]);
-  assert.ok(durations[0] < durations[1]);
-  assert.ok(durations[1] < durations[2]);
-  assert.deepEqual(getSnowGlobeVibrationPattern(4, { boom: true }), [70, 30, 110, 35, 160]);
-  assert.deepEqual(getSnowGlobeVibrationPattern(0), []);
-
-  const mutablePattern = getSnowGlobeVibrationPattern(1);
-  mutablePattern[0] = 999;
-  assert.deepEqual(getSnowGlobeVibrationPattern(1), [10]);
 });
