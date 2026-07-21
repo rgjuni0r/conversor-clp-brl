@@ -1169,7 +1169,7 @@ function buildShareText() {
     || splitSummary.clpSplit.extraPeople > 0;
   const splitLabel = hasRoundingAdjustment ? "Parcela-base" : "Por pessoa";
   const lines = [
-    "CLP ⬌ BRL · Resumo da viagem",
+    "Bordo · Resumo da viagem",
     ...(session.placeName ? [`Lugar: ${session.placeName}`] : []),
     "",
     ...session.items.map((item, index) => (
@@ -1223,7 +1223,7 @@ async function shareReceipt() {
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: "CLP ⬌ BRL", text });
+      await navigator.share({ title: "Bordo — Conta de Viagem", text });
       showReceiptFeedback("Resumo compartilhado.");
       return;
     } catch (error) {

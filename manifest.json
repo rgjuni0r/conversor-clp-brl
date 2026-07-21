@@ -1,21 +1,41 @@
 {
-  "name": "CLP ⬌ BRL",
-  "short_name": "CLP ⬌ BRL",
+  "name": "Bordo — Conta de Viagem",
+  "short_name": "Bordo",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#04111e",
   "theme_color": "#04111e",
-  "description": "Converta CLP e BRL, organize gastos e divida a conta da viagem.",
+  "description": "Converta peso chileno e real, organize gastos, divida contas e acompanhe localização e temperatura durante a viagem.",
+  "categories": ["travel", "finance", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

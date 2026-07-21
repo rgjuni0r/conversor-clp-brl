@@ -1,9 +1,9 @@
 {
-  "name": "conversor-clp-brl",
+  "name": "bordo-conta-de-viagem",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "PWA para conversão CLP/BRL, resumo de gastos e divisão de conta.",
+  "description": "Bordo é um PWA para conversão CLP/BRL, localização, clima, gastos e divisão da conta de viagem.",
   "scripts": {
     "test": "node --test"
   },

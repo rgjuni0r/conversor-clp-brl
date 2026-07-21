@@ -1,11 +1,11 @@
 
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v43`;
+const CACHE = `${CACHE_PREFIX}v44`;
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=43",
-  "./app.js?v=43",
+  "./style.css?v=44",
+  "./app.js?v=44",
   "./js/money.js",
   "./js/location.js",
   "./js/rates.js",
@@ -14,8 +14,13 @@ const ASSETS = [
   "./js/weather.js",
   "./manifest.json",
   "./favicon.ico",
+  "./favicon-16.png",
+  "./favicon-32.png",
+  "./favicon-48.png",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon-maskable-192.png",
+  "./icon-maskable-512.png",
   "./icon-180.png"
 ];
 const ASSET_PATHS = new Set(ASSETS.map(asset => new URL(asset, self.location.href).pathname));
