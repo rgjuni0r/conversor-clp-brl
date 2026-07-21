@@ -1,16 +1,17 @@
 
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v38`;
+const CACHE = `${CACHE_PREFIX}v43`;
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css",
-  "./app.js",
+  "./style.css?v=43",
+  "./app.js?v=43",
   "./js/money.js",
   "./js/location.js",
   "./js/rates.js",
   "./js/session-store.js",
   "./js/snow-motion.js",
+  "./js/weather.js",
   "./manifest.json",
   "./favicon.ico",
   "./icon-192.png",

@@ -11,7 +11,7 @@
   <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-180.png" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=43" />
   <title>CLP ⬌ BRL · Conversor de viagem</title>
 </head>
 <body>
@@ -82,7 +82,14 @@
       </div>
     </div>
 
-    <span class="eyebrow">CONTA DE VIAGEM · CHILE</span>
+    <div class="eyebrow-row">
+      <span class="eyebrow">VIAGEM</span>
+      <div id="weatherChip" class="weather-chip is-day" title="Temperatura atual em Santiago, Chile" aria-live="polite">
+        <span class="weather-icon" aria-hidden="true">☼</span>
+        <span id="weatherPlace">Santiago, Chile</span>
+        <strong id="weatherTemperature">--°C</strong>
+      </div>
+    </div>
     <h1>Converta. Some. Divida.</h1>
     <p>Organize os gastos da viagem e feche a conta sem complicação.</p>
   </header>
@@ -355,6 +362,6 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=43"></script>
 </body>
 </html>

@@ -33,6 +33,13 @@ import {
   createSnowGlobeFrame,
   ShakeDetector
 } from "./js/snow-motion.js";
+import {
+  fetchCurrentWeather,
+  formatTemperature,
+  getDayPeriodIcon,
+  SANTIAGO_COORDINATES,
+  WEATHER_REFRESH_INTERVAL_MS
+} from "./js/weather.js";
 
 const $ = id => document.getElementById(id);
 
@@ -44,6 +51,10 @@ const elements = {
   status: $("status"),
   rateText: $("rateText"),
   heroRateText: $("heroRateText"),
+  weatherChip: $("weatherChip"),
+  weatherIcon: document.querySelector("#weatherChip .weather-icon"),
+  weatherPlace: $("weatherPlace"),
+  weatherTemperature: $("weatherTemperature"),
   manualRate: $("manualRate"),
   saveRateButton: $("saveRateButton"),
   amountLabel: $("amountLabel"),
@@ -193,6 +204,12 @@ const state = {
   toastTimer: null,
   confirmationResolver: null,
   isMobileSummaryExpanded: false
+};
+
+const weatherState = {
+  coordinates: SANTIAGO_COORDINATES,
+  placeName: "Santiago, Chile",
+  isUpdating: false
 };
 
 let session = loadSession();
@@ -422,6 +439,10 @@ async function locateTripPlace() {
     elements.tripPlaceStatus.textContent = "Identificando o nome do lugar…";
     const placeName = await reverseGeocodeCoordinates(coordinates);
 
+    weatherState.coordinates = coordinates;
+    weatherState.placeName = placeName || "Local atual";
+    void updateWeather();
+
     session.placeName = placeName;
     const wasPersisted = persistSession();
     state.placeWasPersisted = wasPersisted;
@@ -445,6 +466,30 @@ async function locateTripPlace() {
     if (shouldFocusManualField) {
       window.setTimeout(() => elements.tripPlace.focus(), 0);
     }
+  }
+}
+
+async function updateWeather() {
+  if (weatherState.isUpdating || !navigator.onLine) return;
+
+  weatherState.isUpdating = true;
+  elements.weatherChip.classList.add("is-loading");
+
+  try {
+    const weather = await fetchCurrentWeather(weatherState.coordinates);
+    elements.weatherPlace.textContent = weatherState.placeName;
+    elements.weatherTemperature.textContent = formatTemperature(weather.temperature);
+    elements.weatherIcon.textContent = getDayPeriodIcon(weather.isDay);
+    elements.weatherChip.classList.toggle("is-day", weather.isDay);
+    elements.weatherChip.classList.toggle("is-night", !weather.isDay);
+    elements.weatherChip.title = `Temperatura atual em ${weatherState.placeName}`;
+    elements.weatherChip.classList.remove("is-unavailable");
+  } catch {
+    elements.weatherChip.classList.add("is-unavailable");
+    elements.weatherChip.title = "Temperatura indisponível no momento";
+  } finally {
+    weatherState.isUpdating = false;
+    elements.weatherChip.classList.remove("is-loading");
   }
 }
 
@@ -1554,19 +1599,26 @@ if (typeof reducedMotionPreference.addEventListener === "function") {
 
 window.addEventListener("pageshow", () => {
   updateExchangeRate({ automatic: true });
+  void updateWeather();
   syncMotionSnow();
 });
 window.addEventListener("pagehide", () => {
   stopMotionListener();
   stopSnowGlobeEffect();
 });
-window.addEventListener("online", () => updateExchangeRate({ automatic: true }));
+window.addEventListener("online", () => {
+  updateExchangeRate({ automatic: true });
+  void updateWeather();
+});
 window.addEventListener("offline", () => {
   elements.status.textContent = "Você está offline · a última cotação salva e o resumo continuam disponíveis.";
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") updateExchangeRate({ automatic: true });
+  if (document.visibilityState === "visible") {
+    updateExchangeRate({ automatic: true });
+    void updateWeather();
+  }
   syncMotionSnow();
 });
 
@@ -1574,8 +1626,13 @@ window.setInterval(() => {
   if (document.visibilityState === "visible") updateExchangeRate({ automatic: true });
 }, RATE_REFRESH_INTERVAL_MS);
 
+window.setInterval(() => {
+  if (document.visibilityState === "visible") void updateWeather();
+}, WEATHER_REFRESH_INTERVAL_MS);
+
 syncSummaryAccordion();
 renderAll();
+void updateWeather();
 syncMotionSnow();
 
 if (session.status === "closed" && session.items.length > 0) {
