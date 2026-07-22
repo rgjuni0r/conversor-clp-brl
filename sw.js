@@ -1,11 +1,11 @@
 
 const CACHE_PREFIX = "clp-brl-";
-const CACHE = `${CACHE_PREFIX}v44`;
+const CACHE = `${CACHE_PREFIX}v46`;
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=44",
-  "./app.js?v=44",
+  "./style.css?v=45",
+  "./app.js?v=45",
   "./js/money.js",
   "./js/location.js",
   "./js/rates.js",
@@ -21,10 +21,23 @@ const ASSETS = [
   "./icon-512.png",
   "./icon-maskable-192.png",
   "./icon-maskable-512.png",
-  "./icon-180.png"
+  "./icon-180.png",
+  "./qrcode/",
+  "./qrcode/qrcode.css?v=46",
+  "./qrcode/install.js?v=46",
+  "./qrcode/qr-bordo.png"
 ];
 const ASSET_PATHS = new Set(ASSETS.map(asset => new URL(asset, self.location.href).pathname));
 const OFFLINE_DOCUMENT = new URL("./index.html", self.location.href).href;
+const QR_DOCUMENT = new URL("./qrcode/", self.location.href).href;
+
+function getNavigationCacheKey(request) {
+  const pathname = new URL(request.url).pathname;
+  const qrPathname = new URL(QR_DOCUMENT).pathname;
+  return pathname === qrPathname || pathname === `${qrPathname}index.html`
+    ? QR_DOCUMENT
+    : OFFLINE_DOCUMENT;
+}
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -54,7 +67,7 @@ async function cacheSuccessfulResponse(request, response) {
 
   try {
     const cache = await caches.open(CACHE);
-    const cacheKey = request.mode === "navigate" ? OFFLINE_DOCUMENT : request;
+    const cacheKey = request.mode === "navigate" ? getNavigationCacheKey(request) : request;
     await cache.put(cacheKey, response.clone());
   } catch {
     // Falhas de quota do cache não devem invalidar uma resposta de rede utilizável.
@@ -71,7 +84,7 @@ async function networkFirst(request) {
     if (cachedResponse) return cachedResponse;
 
     if (request.mode === "navigate") {
-      const offlineDocument = await caches.match(OFFLINE_DOCUMENT);
+      const offlineDocument = await caches.match(getNavigationCacheKey(request));
       if (offlineDocument) return offlineDocument;
     }
 

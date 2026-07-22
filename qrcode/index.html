@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>QR Code do Bordo — Abra o app no celular</title>
+  <meta name="description" content="Escaneie o QR Code para abrir o Bordo, aplicativo de conversão, gastos e divisão de conta para sua viagem." />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta name="theme-color" content="#04111e" />
+  <link rel="canonical" href="https://bordo.abcensina.com.br/qrcode/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:site_name" content="Bordo" />
+  <meta property="og:title" content="QR Code do Bordo" />
+  <meta property="og:description" content="Escaneie para abrir o Bordo no celular e organizar sua conta de viagem." />
+  <meta property="og:url" content="https://bordo.abcensina.com.br/qrcode/" />
+  <meta property="og:image" content="https://bordo.abcensina.com.br/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Bordo — Conta de Viagem, com um avião seguindo uma trajetória sobre os Andes" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="QR Code do Bordo" />
+  <meta name="twitter:description" content="Escaneie para abrir o Bordo no celular." />
+  <meta name="twitter:image" content="https://bordo.abcensina.com.br/og-image.png" />
+
+  <link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48" />
+  <link rel="icon" href="../icon-192.png" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="../icon-180.png" sizes="180x180" />
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="stylesheet" href="qrcode.css?v=46" />
+</head>
+<body>
+  <main class="qr-page">
+    <section class="qr-card" aria-labelledby="qrTitle">
+      <a class="brand" href="../" aria-label="Voltar para o Bordo">
+        <img src="../icon-192.png" width="52" height="52" alt="" />
+        <span>
+          <strong>Bordo</strong>
+          <small>Conta de viagem</small>
+        </span>
+      </a>
+
+      <div class="qr-heading">
+        <span class="eyebrow">ABRA NO CELULAR</span>
+        <h1 id="qrTitle">Escaneie e embarque.</h1>
+        <p>Aponte a câmera do celular para o QR Code e abra o Bordo diretamente no navegador.</p>
+      </div>
+
+      <div class="qr-frame">
+        <img
+          src="qr-bordo.png"
+          width="800"
+          height="800"
+          alt="QR Code que abre o aplicativo Bordo"
+        />
+        <span class="scan-corner scan-corner-one" aria-hidden="true"></span>
+        <span class="scan-corner scan-corner-two" aria-hidden="true"></span>
+      </div>
+
+      <div class="destination">
+        <span aria-hidden="true">↗</span>
+        <div>
+          <small>DESTINO DO QR CODE</small>
+          <strong>bordo.abcensina.com.br</strong>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="primary-action" href="../">Abrir o Bordo neste aparelho</a>
+        <button class="secondary-action" id="installApp" type="button">Baixar o app</button>
+      </div>
+
+      <p class="privacy-note">O código aponta diretamente para o app, sem rastreador ou redirecionador externo.</p>
+    </section>
+  </main>
+
+  <section class="install-help" id="installHelp" role="dialog" aria-modal="true" aria-labelledby="installTitle" hidden>
+    <div class="install-sheet">
+      <button class="install-close" id="installClose" type="button" aria-label="Fechar instruções">×</button>
+      <span class="eyebrow">INSTALE O BORDO</span>
+      <h2 id="installTitle">Leve o Bordo com você.</h2>
+      <p id="installMessage"></p>
+      <ol id="installSteps"></ol>
+      <button class="primary-action" id="installDone" type="button">Entendi</button>
+    </div>
+  </section>
+
+  <script src="install.js?v=46" defer></script>
+</body>
+</html>

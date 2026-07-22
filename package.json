@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Bordo é um PWA para conversão CLP/BRL, localização, clima, gastos e divisão da conta de viagem.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "qr": "osascript -l JavaScript scripts/generate-qr.js https://bordo.abcensina.com.br/ qrcode/qr-bordo.png"
   },
   "engines": {
     "node": ">=20"

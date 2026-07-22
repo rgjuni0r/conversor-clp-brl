@@ -6,7 +6,11 @@
 
 O **Bordo** é um Progressive Web App para viagens entre Brasil e Chile. Ele converte peso chileno (CLP) e real brasileiro (BRL), acompanha localização e temperatura, organiza gastos, divide a conta e compartilha o resumo final — sem cadastro, anúncios ou backend.
 
-URL preparada para publicação: [rgjuni0r.github.io/conversor-clp-brl](https://rgjuni0r.github.io/conversor-clp-brl/)
+URL oficial: [bordo.abcensina.com.br](https://bordo.abcensina.com.br/)
+
+Página para compartilhar por QR Code: [bordo.abcensina.com.br/qrcode](https://bordo.abcensina.com.br/qrcode/)
+
+A página oferece instalação como PWA: usa a janela nativa no Android e orienta a instalação pela Tela de Início no iPhone e iPad.
 
 ## Sumário
 
@@ -83,6 +87,7 @@ A sessão fica salva no próprio aparelho. Depois do primeiro carregamento bem-s
 - Identidade inspirada nos Andes, com neve animada em profundidade.
 - Efeito de globo de neve por agitação intencional, com respeito a `prefers-reduced-motion`.
 - Marca visual própria com avião, trajetória e ponto de destino.
+- Página `/qrcode/` para abrir o app rapidamente em outro aparelho.
 
 ## Localização e clima
 
@@ -194,6 +199,12 @@ conversor-clp-brl/
 │   ├── session-store.test.js
 │   ├── snow-motion.test.js
 │   └── weather.test.js
+├── qrcode/
+│   ├── index.html
+│   ├── qrcode.css
+│   └── qr-bordo.png
+├── scripts/
+│   └── generate-qr.js
 ├── app.js
 ├── index.html
 ├── style.css
@@ -231,6 +242,16 @@ python3 -m http.server 8080
 ```
 
 Depois, abra `http://localhost:8080`.
+
+### Recriar o QR Code
+
+O QR Code aponta diretamente para a URL canônica do app e é gerado localmente pela API nativa do macOS, sem serviço externo:
+
+```bash
+npm run qr
+```
+
+Se a URL pública mudar, atualize o comando `qr` no `package.json`, os metadados e o sitemap antes de gerar a imagem novamente.
 
 ## Testes
 
@@ -273,7 +294,7 @@ O manifesto inclui ícones comuns, Apple Touch Icon e um ícone `maskable` para 
 ### URL canônica configurada
 
 ```text
-https://rgjuni0r.github.io/conversor-clp-brl/
+https://bordo.abcensina.com.br/
 ```
 
 O projeto contém:
@@ -288,6 +309,7 @@ O projeto contém:
 - favicon ICO com 16, 32 e 48 pixels, além dos PNGs;
 - `sitemap.xml` com a URL canônica;
 - `robots.txt` preparado para uma publicação na raiz do domínio.
+- página pública em `/qrcode/`, com QR Code validado e link alternativo para o app.
 
 Esses recursos tornam o site rastreável e ajudam o Google a entender sua finalidade, mas **não garantem indexação nem posição nos resultados**.
 
@@ -303,7 +325,7 @@ Esses recursos tornam o site rastreável e ajudam o Google a entender sua finali
 1. Crie no [Google Search Console](https://search.google.com/search-console/) uma propriedade de prefixo para a URL canônica.
 2. Use **Inspeção de URL → Testar URL publicada**.
 3. Solicite a indexação da página inicial.
-4. Envie `https://rgjuni0r.github.io/conversor-clp-brl/sitemap.xml` na área **Sitemaps**.
+4. Envie `https://bordo.abcensina.com.br/sitemap.xml` na área **Sitemaps**.
 5. Valide o JSON-LD no [Rich Results Test](https://search.google.com/test/rich-results).
 6. Monitore cobertura, canonical selecionado, experiência mobile e Core Web Vitals.
 
@@ -314,8 +336,8 @@ O projeto não inventa avaliações ou notas. Sem avaliações reais, o markup d
 O Google trata nome do site, favicon de resultado e `robots.txt` no nível do **hostname**, não do subdiretório. Portanto:
 
 - o favicon do Bordo funciona normalmente no navegador e no PWA;
-- `rgjuni0r.github.io/conversor-clp-brl/robots.txt` não substitui `rgjuni0r.github.io/robots.txt`;
-- o favicon mostrado na Busca pode ser o favicon geral de `rgjuni0r.github.io`;
+- `robots.txt` e `sitemap.xml` ficam disponíveis diretamente na raiz do domínio;
+- o favicon e o nome exibidos na Busca pertencem exclusivamente ao Bordo;
 - para uma identidade isolada e consistente, prefira um domínio ou subdomínio próprio.
 
 Ao adotar um domínio próprio, atualize juntos:
